@@ -1,0 +1,1129 @@
+\documentclass[final,leqno,showlabe]{siamltex}
+\usepackage{amsmath, graphicx}
+\topmargin=-1.0cm
+\usepackage{stmaryrd}
+\usepackage{booktabs}
+\usepackage{cite}
+\usepackage{amssymb}
+\usepackage{verbatim}
+\usepackage[all,cmtip]{xy}
+\usepackage[top=3.54cm,bottom=4.54cm,left=2.94cm,right=2.94cm ]{geometry}
+
+\usepackage{epstopdf}
+\usepackage{algorithmic}
+\usepackage{float}
+\usepackage[caption=false]{subfig}
+
+%  ================= Revised part ===============
+\usepackage{color}
+\usepackage{enumerate}
+
+\newcommand{\fft}[1]{\widehat{\left(#1\right)}_l}
+\newcommand{\dft}[1]{\widetilde{\left(#1\right)}_l}
+\newcommand{\abs}[1]{\lvert#1\rvert}
+\newcommand{\bigabs}[1]{\left|#1\right|}
+\newcommand{\norm}[1]{\lVert#1\rVert}
+\newcommand{\br}{{\bf r} }
+\newcommand{\Aeps}{\mathcal{A}^\eps}
+\newcommand{\bes}{\begin{equation*}}
+\newcommand{\ees}{\end{equation*}}
+% =================== End ====================
+
+\input psfig.sty
+
+
+\newcommand{\mean}[1]{\left\langle #1 \right\rangle}
+\renewcommand{\theequation}{\arabic{section}.\arabic{equation}}
+\renewcommand{\thetable}{\arabic{table}}
+\renewcommand{\thefigure}{\arabic{figure}}
+\newcommand{\bx}{{\bf x} }
+\newcommand{\bT}{{\bf T} }
+\newcommand{\bn}{{\bf n} }
+\newcommand{\bB}{{\bf B} }
+\newcommand{\bk}{{\bf k} }
+\newcommand{\bJ}{{\bf J} }
+\newcommand{\bee}{{\bf e} }
+\newcommand{\bez}{{\bf z}}
+\newcommand{\beU}{{ U} }
+\newcommand{\bV}{{\bf V}}
+\newcommand{\beG}{{ G} }
+\newcommand{\calF}{{\mathcal{F}} }
+\newcommand{\p}{\partial}
+\newcommand{\eps}{\varepsilon}
+\newcommand{\sinc}{{\text{sinc}}}
+\newcommand{\intL}{\int_{L_1}^{L_2}}
+%\newtheorem{thm}{Theorem}[section]
+%\newtheorem{lemma}{Lemma}
+\newtheorem{rmk}{Remark}[section]
+%\newtheorem{step}{Step}
+%\newtheorem*{pf}{proof}
+\newcommand{\be}{\begin{equation}}
+\newcommand{\ee}{\end{equation}}
+\newcommand{\ba}{\begin{array}}
+\newcommand{\ea}{\end{array}}
+\newcommand{\bea}{\begin{eqnarray}}
+\newcommand{\eea}{\end{eqnarray}}
+\newcommand{\beas}{\begin{eqnarray*}}
+\newcommand{\eeas}{\end{eqnarray*}}
+\newcommand{\dpm}{\displaystyle}
+\newcommand{\calT}{{\cal T}}
+
+\title{Uniformly accurate nested Picard iterative integrators for the Klein-Gordon equation in the nonrelativistic regime\thanks{This work was partially supported by NSFC grant 11771036 (Y. Cai) and by NSAF No. U1930402.}
+}
+\author{ Yongyong Cai\thanks{Laboratory of Mathematics and Complex Systems (Ministry of Education), School of Mathematical Sciences, Beijing Normal University, Beijing 100875, P. R. China
+ ({\tt yongyong.cai@bnu.edu.cn})}
+\and Xuanxuan Zhou \thanks{Beijing Computational Science Research Center,
+   Beijing 100094, China ({\tt zhouxuanx@csrc.ac.cn})}
+}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+% REQUIRED
+\begin{abstract}
+  In this paper, a uniformly accurate nested picard iterative integrator (NPI) Fourier pseudospectral method is proposed for the nonlinear Klein-Gordon equation in the nonrelativistic limit regime. This method allows us to derive arbitrary higher-order methods in time with optimal and uniform accuracy under far weaker regularity assumptions on the exact solution. In addition, the implementation of the second-order NPI method via Fourier pseupospectral discretization is clearly demonstrated, and the corresponding error estimates are rigorously analyzed. Some numerical examples are provided to support our theoretical results and show the accuracy and efficiency of the new scheme.
+\end{abstract}
+
+% REQUIRED
+\begin{keywords}
+  Klein-Gordon equation, nested picard iterative, uniformly convergence.
+\end{keywords}
+
+% REQUIRED
+\begin{AMS}
+  35Q41, 65M70, 65N35
+\end{AMS}
+
+\section{Introduction}
+Consider the nonlinear Klein-Gordon equation \cite{Limitkg,Kg-S,Ado:1996,Cauchy:1,Exact:1992,2Dkg:2006,Comparison:2019bao,Exponential:2010,Cohen:2003,Symmetric:2018,Lowre:2018} (NLKG) in $d$-dimensions ($d=1,2,3$)
+\begin{equation}\label{problem}
+\begin{split}
+&\varepsilon^2\partial_{tt}\psi(x,t)-\Delta\psi(x,t)+\frac{1}{\varepsilon^2}\psi(x,t)=f(\psi),\ x\in \mathbb{R}^d, t>0, \\
+&\psi(x,0)=\psi_0(x),\ \partial_t\psi(x,0)=\frac{1}{\varepsilon^2}\psi_1(x), x\in \mathbb{R}^d,
+\end{split}
+\end{equation}
+where $\psi(x,t)$ is a complex-valued scalar field, $\Delta$ is the $d$ dimensional Laplace operator, $f(\cdot)$ is Gauge invariant  satisfying $f(\omega \psi)=\omega f(\psi)$ ($\forall \omega\in\mathbb{C}$ with $|\omega|=1$), $0<\varepsilon\leq 1$ is a dimensionless parameter inversely proportional to the speed of  light. In this paper, we will assume the nonlinear term $f(|\psi|^2)=\lambda|\psi|^2\psi$  ($\lambda\in \mathbb{R}$) to fix the idea, and the discussion also holds for polynomial type function $f(\cdot)$ (in $\psi$ and its complex conjugate $\overline{\psi}$).
+
+The above NLKG equation has been extensively studied numerically in the relativistic regime $\varepsilon=1$, see \cite{Bra:2009,Collocation:1993,Decomposition:1996,Radialbasis:2009,Symmplectic:1997,Jimenez:1990,Khalifa:2005,Legendre:1997,Finite:1995,Hermite:2018} and the references therein.
+In the 'non-relativistic regime' $\varepsilon \ll 1$, due to the highly-oscillatory behavior in time of the solution, the work that constructing efficient and uniformly accurate method is much more difficult. More precisely, the solution of \eqref{problem} oscillates in time with $O(\varepsilon^2)$ wavelength,
+which is difficult to resolve numerically when $\varepsilon\ll1$.
+To address this issue, Bao and Dong \cite{finiteE:2012} proposed four finite difference time domain methods (FDTD) and for the problem \eqref{problem}, and analyzed the error estimates which depends explicitly on $\varepsilon$ as well as the mesh size $h$ and time step $\tau$. Based on the estimates, the meshing strategy ($\varepsilon$-scalability) requirement of FDTD methods is $\tau=O(\varepsilon^3)$ and $h=O(1)$.
+In order to improve the error convergence, by using Fourier pseudospectral approximation for spatial derivatives combined with the exponential integrator (EWI) for temporal derivatives in \eqref{problem}, they proposed the EWI Fourier pseudospectral method and shows the $\varepsilon$-scalability is $\tau=O(\varepsilon^2)$ and $h=O(1)$.
+Later, in \cite{Faou:2014} Faou and Schratz presented a class of limit integrators (LI) for \eqref{problem} via solving numerically the limiting model which can be carried out very efficiently without imposing any $\varepsilon-$dependent step-size restriction. However, as this approach is based on the asymptotic expansion of the solution with respect to $\varepsilon^2$. Henceforth, the limit integration method only yields an accurate approximation of the exact solution for $\varepsilon\rightarrow0$.
+At the same time, Dong et.al. \cite{Timesplitting:2014} applied the time-splitting pseudospectral discretization to solve the \eqref{problem}, and obtained the similar $\varepsilon$-scalability $(\tau=O(\varepsilon^2))$ as the EWI Fourier pseudospectral method. Numerically, in order to resolve such high frequency oscillatory in time, the meshing strategy which depends on $\varepsilon$ for the above methods still brings severe numerical burden.
+
+To overcome this difficulty,  various  uniformly accurate methods haven been designed for solving the problem \eqref{problem},  e.g.  the multiscale time integrator pseudospectral method \cite{1multiscale:2014,multiscalegeneral:2014,2multiscale:preprint,multiandtwo:2017} (MTI-FP) via a multiscale decomposition by frequency to the solution at each time step and adopting the exponential wave integrator Fourier pseudospectral method for discretizing the decomposed sub-problems,
+and the uniformly accurate two-scale formulation (TSF) method \cite{Twoscale:2015} based on the Chapman-Enskog expansions can be constructed by embedding  \eqref{problem} in a suitable "two-scale" reformulation by introducing an extra dimension, i.e. the fast  variable $\xi=t/\varepsilon^2$.
+Recently, a second-order uniformly accurate iterative exponential integrator method (IEI) has been  constructed \cite{Asymptoticiterative:2018} based on the integral form of the KG equation \eqref{problem} and the 'twisted variable' formulation. The main point in the approximation is integrating the highly oscillatory phases $e^{\pm it/\varepsilon^2}$ and their interactions exactly.
+Noticing the fact that the oscillations in time are due to the linear differential operator in \eqref{problem}, the iteration techniques \cite{Asymptoticiterative:2018} were generalized to
+ design arbitrary high order uniformly accurate nested Picard integrators (NPIs) for the Dirac equation in the nonrelativistic regime \cite{Nested:2018}.
+
+The main object of this paper is to present a general strategy to construct arbitrary $k$-th order ($k=1,2,\dots,$) numerical schemes which are uniformly accurate with respect to $\varepsilon$,  based on the ideas in \cite{Asymptoticiterative:2018,Nested:2018}.  Our strategy enables to propose $k$-th order uniformly accurate numerical schemes
+only by adding a $O(\tau^k)$ term to the previous constructed $(k-1)$-th order uniformly accurate numerical schemes. In the same spirit as in \cite{Nested:2018}, we will propose a nested Picard iterative integrator pseudospectral method  using a nested Picard iterative idea to the integral equation of \eqref{problem} by the Duhamel's principle.
+
+
+%% This allows to separate the fast time scale $\xi=t/\varepsilon^2$ from the slow one $t$.
+%%In the following we give a analysis in detail of the IEI method.
+%IEI method:  By setting
+%\begin{align*}
+%&u=\psi-i(\langle \nabla\rangle_\varepsilon/\varepsilon)^{-1}\partial_t\psi,\,u_*(t)=e^{it/\varepsilon^2}u(t),\\
+%&v=\bar{\psi}-i(\langle \nabla\rangle_\varepsilon/\varepsilon)^{-1}\partial_t\bar{\psi},\,v_*(t)=e^{-it/\varepsilon^2}v(t),
+%\end{align*}
+%with the operators
+%\begin{equation*}
+%\langle \nabla\rangle_\varepsilon=\sqrt{-\Delta+\frac{1}{\varepsilon^2}},\,\mathcal{A}_\varepsilon=\langle \nabla\rangle_\varepsilon/\varepsilon-1/\varepsilon^2.
+%\end{equation*}
+%one finds that in term of the variables $u_*$ and $v_*$ \eqref{problem} reads
+%\begin{align*}
+%&i\partial_tu_*=-\mathcal{A}_\varepsilon u_* +\langle \nabla\rangle_\varepsilon^{-1}e^{-it/\varepsilon^2}f(\frac{1}{2}(e^{it/\varepsilon^2}u_*+e^{-it/\varepsilon^2}\bar{v}_*)),\\
+%&i\partial_tv_*=-\mathcal{A}_\varepsilon v_* +\langle \nabla\rangle_\varepsilon^{-1}e^{-it/\varepsilon^2}f(\frac{1}{2}(e^{it/\varepsilon^2}v_*+e^{-it/\varepsilon^2}\bar{u}_*)),
+%\end{align*}
+%Based on the Duhamel's formula, we have
+%\begin{align*}
+%u_*(t_n+\tau)&=e^{i\tau \mathcal{A}_\varepsilon}u_*(t_n)\\
+%&-i/\varepsilon \langle \nabla\rangle_\varepsilon^{-1}\int_{0}^{\tau}e^{i(\tau-s)\mathcal{A}_\varepsilon}e^{-i(t_n+s)/\varepsilon^2}f\left( \frac{1}{2}(e^{i(t_n+s)/\varepsilon^2}u_*(t_n+s)+e^{-i(t_n+s)/\varepsilon^2}\bar{v}_*(t_n+s)))\right)\,ds,\\
+%v_*(t_n+\tau)&=e^{i\tau \mathcal{A}_\varepsilon}v_*(t_n)\\
+%&-i/\varepsilon \langle \nabla\rangle_\varepsilon^{-1}\int_{0}^{\tau}e^{i(\tau-s)\mathcal{A}_\varepsilon}e^{-i(t_n+s)/\varepsilon^2}f\left( \frac{1}{2}(e^{i(t_n+s)/\varepsilon^2}v_*(t_n+s)+e^{-i(t_n+s)/\varepsilon^2}\bar{u}_*(t_n+s)))\right)\,ds,
+%\end{align*}
+
+%However, the approximation approach showed in \cite{Asymptoticiterative:2018} is difficult to be applied to construct the higher-order uniformly accurate method.
+%Reformulating the \eqref{problem} into a coupled first-order PDE system and solving the first-order PDE by the iterating Duhamel's principle, two uniformly accurate numerical schemes for the \eqref{problem} in the strongly non-relativistic limit regime $\varepsilon\ll 1$ were introduced in \cite{Asymptoticiterative:2018}.
+
+
+
+The rest of the paper is organized as follows. In section \ref{sec:npi} and section \ref{sec:fnpi}, we construct the NPI methods and show the practical implementation of the first-order, second-order and third-order accurate NPI methods. Error estimates are rigorously analyzed for  arbitrary higher-order semi-discrete-in-time NPI methods in section \ref{sec:ana}. Numerical examples are reported in section \ref{sec:experiments} to validate the efficiency and uniform accuracy. Finally, we draw some conclusions in section \ref{sec:conclusions}. Throughout the paper, we will use $A\lesssim B$ to mean that there exists constant $C$ independent of $\varepsilon$ and time step $\tau$, such that
+$|A|\leq CB$.
+
+\section{The Nested Picard method}
+\label{sec:npi}
+%utilize Fourier spectral discretization for the equation which can be translated into the Fourier domain
+In this section, we will utilize the Duhamel's principle for the equation which can be translated into the time semi-discrete form, and present the details for the uniform first, second order NPI method in the fully discrete form. Here, we shall only present numerical methods and their analysis in $1$D. Generalization to higher dimension is straightforward and results remain valid without modifications.
+
+For the simplicity of notations,  we introduce the following definitions:
+\begin{align}\label{deco}
+&\mathcal{D}_{\varepsilon}=\sqrt{\frac{1-\varepsilon^2\Delta}{\varepsilon^4}}=\frac{1}{\varepsilon^2}+\mathcal{D},\ \mathcal{D}=\frac{\sqrt{1-\varepsilon^2\Delta}-1}{\varepsilon^2},
+\end{align}
+where $\mathcal{D}$ is a uniformly bounded operator from $H^s(\mathbb{R}^d)$ to $H^{s-2}(\mathbb{R}^d)$ w.r.t $\varepsilon$. Then, we can rewrite KG equation \eqref{problem} as
+\begin{equation}\label{ode}
+\partial_{tt}\psi(x,t)+\mathcal{D}_{\varepsilon}^2\psi(x,t)=\frac{1}{\varepsilon^2}f(\psi),\quad f(\psi)=\lambda|\psi|^2\psi,\quad  x\in\mathbb{R}^d,\ t\geq 0.
+\end{equation}
+%%%%%%%%%choice1%%%%%%%%
+By Duhamel principle, the solution $\psi(t):=\psi(x,t)$ of \eqref{ode}/\eqref{problem} can be expressed in the integral form as
+\begin{align}\label{int:1}
+&\psi(t)=\cos{(\mathcal{D}_{\varepsilon}t)}\psi(0)+\frac{\sin{(\mathcal{D}_{\varepsilon}s)}}{\mathcal{D}_{\varepsilon}}\partial_t\psi(0)
++\frac{1}{\varepsilon^2\mathcal{D}_{\varepsilon}}\int_{0}^{t}\sin{(\mathcal{D}_{\varepsilon}(t-s))}f(\psi(s))ds.\end{align}
+Differentiating \eqref{int:1} with respect to $t$, we obtain
+\begin{equation}\label{int:2}
+\partial_t\psi(t)=-\mathcal{D}_{\varepsilon}\sin{(\mathcal{D}_{\varepsilon}t)}\psi(0)+\cos{(\mathcal{D}_{\varepsilon}s)}\partial_t\psi(0)
++\frac{1}{\varepsilon^2}\int_{0}^{t}\cos{(\mathcal{D}_{\varepsilon}(t-s))}f(\psi(s))ds.
+\end{equation}
+Inspired by the linear terms in \eqref{int:1} and \eqref{int:2}, it is naturally to introduce the auxiliary variables (twisted variables) as
+\begin{equation}\label{twist}
+\psi_\pm(t):=\psi_{\pm}(x,t)=\frac{1}{2}\left(\psi(x,t)\pm i \mathcal{D}_{\varepsilon}^{-1}\partial_t\psi(x,t)\right),
+\end{equation}
+and the following equivalent integral form of KG equation for $\psi_\pm(t)$ can be written as
+\begin{equation}\label{twist:int}
+\psi_\pm(t)=e^{\mp i\mathcal{D}_{\varepsilon} t}\psi_{\pm}(0)\pm \frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^t e^{\mp i \mathcal{D}_\varepsilon (t-s)} f(\psi_+(s)+\psi_-(s))\,ds.
+\end{equation}
+For given initial data of KG \eqref{problem},  \eqref{twist} defines the initial value for the integral equations \eqref{twist:int} as
+\begin{equation}\label{psi:data}
+\psi_\pm(0)=\frac{1}{2}\left(\psi_0\pm i\mathcal{D}_{\varepsilon}^{-1}\psi_1\right),
+\end{equation}
+and the solution $\psi(t)$ to KG \eqref{problem} can be recovered from $\psi_\pm(t)$ as
+\begin{equation}\label{relation}
+\psi(t)=\psi_+(t)+\psi_-(t),
+\quad \partial_t\psi(t)=-i\mathcal{D}_{\varepsilon}\left(\psi_+(t)-\psi_-(t)\right).
+\end{equation}
+
+
+From now on, it suffices to consider the integral equations \eqref{twist:int} with \eqref{psi:data}. Choose time-step size $\tau=\Delta t>0$ and denote time steps $t_n=n\tau$ ($n=0,1,2,\dots$).
+Let $\psi_\pm^n$ be the numerical approximations of $\psi_\pm(t_n)$.
+
+By Duhamel's principle, from $t_n$ to $t_{n+1}$,
+the solution $\psi_\pm(t_n+s):=\psi_\pm(x,t_n+s)$ ($s\in[0,\tau]$) of \eqref{ode}/\eqref{problem} can be represented as
+\begin{align}\label{es1}
+&\psi_\pm(t_n+s)=e^{\mp i\mathcal{D}_{\varepsilon} s}\psi_{\pm}(t_n)\pm \frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp i \mathcal{D}_\varepsilon (s-w)} f(\psi_+(t_n+w)+\psi_-(t_n+w))\,dw.
+\end{align}
+
+%%%%%%%%%%%%%%%%%%%%%%%the way to lower the regularity of the exact solution in space
+%this method can not low the regularity, but simply the calculations
+%\begin{align*}
+%&e^{-\mp i\mathcal{D} s}\psi_\pm(t_n+s)=e^{\mp i s/\varepsilon^2}\psi_{\pm}(t_n)\pm \frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp i (s-w)/\varepsilon^2}e^{-\mp i \mathcal{D}w} f(\psi_+(t_n+w)+\psi_-(t_n+w))\,dw,
+%\end{align*}
+%let $v_\pm(t_n+s)=e^{-\mp i\mathcal{D} (t_n+s)}\psi_\pm(t_n+s)$, and multiply $e^{-\mp i t_n\mathcal{D}}$ with the above equality, it can be obtained from simple calculation that
+%\begin{align*}
+%&v_\pm(t_n+s)=v_\pm(t_n)\pm \frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp i (s-w)/\varepsilon^2}e^{-\mp i \mathcal{D}(t_n+w)} f(e^{- i\mathcal{D} (t_n+w)}v_+(t_n+w)+e^{i\mathcal{D} (t_n+w)}v_-(t_n+w))\,dw,\\
+%\end{align*}
+%easy to get
+%\begin{align*}
+%&v_+(t_n+s)=v_+(t_n)+ \frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{-i (s-w)/\varepsilon^2}f(v_+(t_n+w)+e^{2i\mathcal{D} (t_n+w)}v_-(t_n+w))\,dw,\\
+%&v_-(t_n+s)=v_-(t_n)- \frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{i (s-w)/\varepsilon^2}f(e^{-2i\mathcal{D} (t_n+w)}v_+(t_n+w)+v_-(t_n+w))\,dw,\\
+%\end{align*}
+%%%%%%%%%%%%%%%%%%%%%%%
+%Differentiating \eqref{es1} with respect to $s$, we obtain
+%\begin{equation}\label{es2}
+%\partial_t\psi(t_n+s)=-\mathcal{D}_{\varepsilon}\sin{(\mathcal{D}_{\varepsilon}s)}\psi(t_n)+\cos{(\mathcal{D}_{\varepsilon}s)}\partial_t\psi(t_n)
+%+\frac{1}{\varepsilon^2}\int_{0}^{s}\cos{(\mathcal{D}_{\varepsilon}(s-w))}f^n(w)ds.
+%\end{equation}
+
+%now, for a positive integer $N$, c In each time interval $t_n+w\in[t_n,t_{n+1}]$, we have
+%\begin{eqnarray}\label{es1}%exact solution 1
+%&\psi(x,t_n+w)=\cos{(\mathcal{D}_{\varepsilon}w)}\psi(x,t_n)+\frac{\sin{(\mathcal{D}_{\varepsilon}w)}\partial_t\psi(x,t_n)}{\mathcal{D}_{\varepsilon}}
+%+\frac{1}{\mathcal{D}_{\varepsilon}\varepsilon^2}\int_{0}^{w}\sin{(\mathcal{D}_{\varepsilon}(w-s))}f(s)ds,
+%\end{eqnarray}
+From the theoretical results, we know $\psi_\pm(t)=O(1)$ and oscillations (w.r.t $\varepsilon$) are in time, i.e. $\|\psi_\pm(t)\|_{H^k}=O(1)$, $\|\partial_t^k\psi_\pm(t)\|_{H^k}=O(\varepsilon^{-2k})$ for sufficiently regular initial data. To construct uniformly accurate numerical schemes for solving \eqref{es1}, the key observation is that $e^{it\mathcal{D}_\varepsilon }$ is unitary in Hilbert space $H^k(\mathbb{R}^d)$ and the highly oscillatory phases can be separated by the decomposition   \eqref{deco} as
+\begin{equation}\label{eq:deco}
+e^{i\mathcal{D}_{\varepsilon}t}=e^{it/\varepsilon^2}e^{it\mathcal{D}}.
+\end{equation}
+Inspired by the works in \cite{Nested:2018,Lowre:2018,Asymptoticiterative:2018}, we can construct the following $m$-th order uniformly accurate method by applying nested Picard iterative idea to \eqref{es1}. From $t_n$ to $t_{n+1}$, we follow the procedures below to update $\psi_\pm^{n+1}$ from $\psi_{\pm}^n$. \\
+\noindent{\bf{Step 1.}} In each time interval, i.e., from $t_n$ to $t_{n+1}$, $n\geq 0$, starting from $ \psi_\pm^n= \psi(t_n)$ (for simplicity of illustration), we construct the the numerical approximations $\psi_\pm^{n,k}(s)$  ($k\ge1$) of the exact solution $\psi_\pm(t_n+s)$ ($s\in[0,\tau]$). Let
+\begin{equation}\label{0npi}
+\psi_\pm^{n,0}(s)=e^{\mp i\mathcal{D}_\varepsilon s}\psi_\pm^n,
+\end{equation}
+and $\psi_\pm^{n,0}(s)-\psi_\pm(t_n+s)=O(s)$.
+
+\noindent{\bf{Step 2.}} Calculate $\psi^{n,k}(s):=\psi^{n,k}(s,x)$ by the following nested Picard iteration:
+\begin{equation}\label{es3}
+\psi_\pm^{n,k}(s)=e^{\mp i\mathcal{D}_{\varepsilon} s}\psi_{\pm}^n\pm \frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp i \mathcal{D}_\varepsilon (s-w)} f(\psi_+^{n,k-1}(w)+\psi_-^{n,k-1}(w))+O(s^{k+1}),
+\end{equation}
+and the error term $O(s^{k+1})$   allows suitable numerical approximation of the integral term
+to maintain the properties $\psi_\pm^{n,k}(s)-\psi_\pm(t_n+s)=O(s^{k+1})$.
+
+\noindent{\bf{Step 3.}} Update $\psi_\pm^{n+1}$  at the $m$-th iteration by $\psi_\pm^{n+1}(x)=\psi_\pm^{n,m}(\tau)=\psi_\pm^{n,m}(\tau,x)$. Then the local error of $\psi_\pm^{n+1}$ would be an $O(\tau^{m+1})$ and the global error of such scheme is $O(\tau^m)$ independent of $\varepsilon$.
+
+To implement the above NPI methods in practice, we update $\psi_\pm^{n,k}$ based on lower order NPI  as $\psi_\pm^{n,k}(s)=\psi_\pm^{n,k-1}(s)+\delta_\pm^{k}(s;\psi_+^n,\psi_-^n)$ ($k\ge1$), i.e.
+\begin{equation}
+\delta_\pm^{n,k}(s):=\delta_\pm^{k}(s;\psi_+^n,\psi_-^n)=\psi_\pm^{n,k}(s)-\psi_\pm^{n,k-1}(s),\text{ with }\psi_\pm^{n,0}(s)=e^{\mp i\mathcal{D}_\varepsilon s}\psi_\pm^n, \quad k\ge1,\quad s\in[0,\tau],
+\end{equation}
+and it is obvious that $\delta_\pm^{n,k}(s)=O(\tau^{k})$. To be precise, we will update $\psi_\pm^{n,k}(s)$ by adding  the $O(\tau^k)$ term $\delta_\pm^{n,k}(s)$ to the previous constructed $\psi_\pm^{n,k-1}(s)$, similar to Taylor expansion.
+
+Now, let's show the detailed construction of the uniform first-order, second-order and high-order NPI methods, respectively.\\
+{\bf{First order NPI:\    }}
+From \eqref{es3}, we have
+\begin{equation}\label{1stnpi}
+\delta_\pm^{n,1}(s):=\delta_\pm^{1}(s;\psi_+^n,\psi_-^n)=\pm \frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp i \mathcal{D}_\varepsilon (s-w)} f(\psi_+^{n,0}(w)+\psi_-^{n,0}(w))+O(s^{2}).
+\end{equation}
+To make the minimal effort,  only zero-th order term (in $s$) in the integrand needs to be evaluated for the time integrals. Combining \eqref{eq:deco}, $e^{\pm is\mathcal{D}_\varepsilon}=e^{\pm is/\varepsilon^2} (I+O(s\mathcal{D}))$ and, we get
+\begin{equation}\label{eq:delta1}
+\delta_\pm^{n,1}(s):=\delta_\pm^{1}(s;\psi_+^n,\psi_-^n)=\pm \frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp i  (s-w)/\varepsilon^2} f(e^{-iw/\varepsilon^2}\psi_+^{n}+e^{iw/\varepsilon^2}\psi_-^{n})\,dw.
+\end{equation}
+The strategy is to approximate the non-oscillatory differential operator part $e^{is\mathcal{D}}$  by suitable polynomials  and leave the oscillatory factor $e^{\mp iw/\varepsilon^2}$ exact, which will lead to an easily computable $\delta_\pm^{n,1}(s)$ ($s\in\mathbb{R}$):
+\begin{align}
+\delta_{\pm}^{n,1}(s)=&p_{-2}(\pm s)\mathcal{F}_{1,\pm}^n+ p_0(\pm s)\mathcal{F}_{2,\pm}^n+p_{2}(\pm s)\mathcal{F}_{2,\mp}^n+p_{4}(\pm s)\mathcal{F}_{1,\mp}^n,\label{eq:npi1}\\
+\mathcal{F}_{1,\pm}^n:=&\mathcal{F}_{1,\pm}(\psi_+^n,\psi_-^n)=\mathcal{A}(\overline{\psi_\mp^n}(\psi_\pm^n)^2),
+\quad\mathcal{F}_{2,\pm}^n:=\mathcal{F}_{2,\pm}(\psi_+^n,\psi_-^n)=\mathcal{A}\left(2|\psi_\mp^n|^2 +|\psi_\pm^n|^2\right)\psi_\pm^n,\nonumber\\
+p_{0}(s)=&e^{\frac{-is}{\varepsilon^2}}s,\quad
+ p_{\pm2}(s)=e^{\frac{-is}{\varepsilon^2}}\int_{0}^{s}e^{\frac{\pm2iw}{\varepsilon^2}}dw,\quad p_{4}(s)=e^{\frac{-is}{\varepsilon^2}}\int_{0}^{s}e^{\frac{4 iw}{\varepsilon^2}}dw\quad \mathcal{A}=i\frac{\lambda}{2\varepsilon^2}\mathcal{D}_{\varepsilon}^{-1}.\nonumber
+\end{align}
+We note that $\overline{p_k(s)}=-p_k(-s)$ ($k=0,\pm2,4$).
+
+%\begin{align}
+%&\delta_{+}^{n,1}(s)=\overline{p_2(s)}\mathcal{F}_1+p_0(s)\mathcal{F}_2+p_{2}(s)\mathcal{F}_3+p_{4}(s)\mathcal{F}_4,\quad
+%\delta_{-}^{n,1}(s)=\overline{p_4(s)}\mathcal{F}_1+\overline{p_2(s)}\mathcal{F}_2+\overline{p_{0}(s)}\mathcal{F}_3+p_{2}(s)\mathcal{F}_4,\nonumber\\
+%&\mathcal{F}_{1}=\mathcal{A}(\bar{\psi}_+^n(\psi_-^n)^2),
+%\, \mathcal{F}_{2}=\mathcal{A}\left(|\psi_-^n|^2\psi_-^n +2|\psi_+^n|^2\psi_-^n\right),\,\mathcal{F}_{3}=\mathcal{A}\left(|\psi_+^n|^2\psi_+^n +2|\psi_-^n|^2\psi_+^n\right),\,
+%\mathcal{F}_{4}=\mathcal{A}((\psi_+^n)^2\bar{\psi}_-^n),\nonumber\\
+%&p_{0}(s)=ie^{-is/\varepsilon^2}s,\quad
+% p_{2}(s)=ie^{-is/\varepsilon^2}\int_{0}^{s}e^{2iw/\varepsilon^2}dw,\quad p_{4}(s)=ie^{-is/\varepsilon^2}\int_{0}^{s}e^{4 iw/\varepsilon^2}dw.\nonumber
+%\end{align}
+
+%\begin{align*}
+%&\delta_{\pm}^{n,1}=\sum_{\alpha=1}^{4}p_{1,\alpha}^{\mp}(s)\mathcal{F}_{1,\alpha}(\psi_+^n,\psi_-^n),\\
+%&p_{1,1}^{\mp}(s)=\pm\int_{0}^{s}e^{\mp iw/\varepsilon^2}e^{i3w/\varepsilon^2}dw,
+% p_{1,2}^{\mp}(s)=\pm\int_{0}^{s}e^{\mp iw/\varepsilon^2}e^{iw/\varepsilon^2}dw,\\
+%&p_{1,3}^{\mp}(s)=\pm\int_{0}^{s}e^{\mp iw/\varepsilon^2}e^{-iw/\varepsilon^2}dw,
+% p_{1,4}^{\mp}(s)=\pm\int_{0}^{s}e^{\mp iw/\varepsilon^2}e^{-i3w/\varepsilon^2}dw,\\
+%&\mathcal{F}_{1,1}=\mathcal{A}\bar{\psi}_+^n(\psi_-^n)^2,
+%\quad \quad\quad \quad \quad\quad \mathcal{F}_{1,2}=\mathcal{A}|\psi_-^n|^2\psi_-^n +2\mathcal{A}|\psi_+^n|^2\psi_-^n,\\
+%&\mathcal{F}_{1,3}=\mathcal{A}|\psi_+^n|^2\psi_+^n +2\mathcal{A}|\psi_-^n|^2\psi_+^n,
+%\mathcal{F}_{1,4}=\mathcal{A}(\psi_+^n)^2\bar{\psi}_-^n .
+%\end{align*}
+
+{\bf{Higher order NPI:}}
+Assume now, we have computed $\delta_{\pm}^{n,m}(s)$ ($m=1,2,\cdots k-1$, $k\ge 2$), to construct $\psi_{\pm}^{n,k}(s)$, we need only evaluate the integral
+\begin{equation}\label{hnpi}
+\psi_{\pm}^{n,k}(s)=\psi_{\pm}^{n,0}(s)\pm \frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp i \mathcal{D}_{\varepsilon} (s-w)} f(\psi_+^{n,k-1}(w)+\psi_-^{n,k-1}(w))\,dw.
+\end{equation}
+Using the strategy in the first order NPI case, one possible polynomial expansion for the integral kernel could be $e^{\pm is\mathcal{D}_\varepsilon}=e^{\pm is/\varepsilon^2} (I+\sum\limits_{j=1}^{k-1}\frac{(\pm is\mathcal{D})^{j}}{j!})+O((s\mathcal{D}))^k)$, but such expansion would yield regularity loss due to the  $\mathcal{D}^j$ terms. Instead, we apply filters to $\mathcal{D}$ as
+$\frac{\sin(\mathcal{D}\tau)}{\tau}=\sinc(\tau \mathcal{D})\mathcal{D}=\mathcal{D}+O(\tau \mathcal{D})$  ({\rm sinc} function is defined as $\text{sinc}(s)=\frac{\sin s}{s}$ ($s\neq0$) and $\text{sinc}(0)=1$). For $\mu=\sin(\tau\lambda),\;\tau\lambda\in(-\pi/2,\pi/2)$, noticing
+\begin{equation}
+\tau \lambda=\arcsin(\mu)=\sum\limits_{k=0}^\infty \frac{(2k)!}{2^{2k}(k!)^2}\frac{\mu^{2k+1}}{2k+1},\quad b_k=\frac{(2k)!}{2^{2k}(k!)^2}\frac{1}{2k+1},
+\quad k\ge0,
+\end{equation}
+ we
+ have the following  expansion of $e^{\pm is\mathcal{D}}$ ($s\in[0,\tau]$) in terms of $\sin(\tau \mathcal{D})$
+\begin{equation}\label{eq:expansion}
+e^{\pm is \mathcal{D}_\varepsilon}=e^{\pm is/\varepsilon^2} \left(Id+\sum_{k=1}^\infty a_k^{\pm}(s)
+ \left(\sin(\tau \mathcal{D})\right)^{k}\right),
+\end{equation}
+where the coefficients $a_k^{\pm}(s)$ ($k=0,1,\cdots$, $a_0^{\pm}(s)=1$) are polynomials  of degree $k$ given by
+\begin{equation}
+a_{k}^\pm(s)=\sum\limits_{j=1}^{k} \frac{(\pm i)^j}{j!}\left(\frac{s}{\tau}\right)^jb_{kj},\quad
+b_{kj}=\begin{cases} 0,& k-j \text{ odd},\\
+\sum\limits_{k_1+\cdots +k_j=\frac{k-j}{2}} b_{k_1}b_{k_2}\cdots b_{k_j},& k-j \text{ even}.
+\end{cases}
+\end{equation}
+The first three coefficients $a_k^\pm(s)$ ($k\ge1$) can be computed as
+\begin{equation}
+a_1^\pm(s)=\pm i s/\tau,\quad a_2^\pm(s)=-\frac{1}{2\tau^2}s^2,\quad a_3^\pm(s)=\mp \frac{is^3}{6\tau^3} \pm\frac{is}{6\tau}.
+\end{equation}
+On the other hand, we already have
+$\delta_{\pm}^{n,m}(s)$, which are  the $O(\tau^m)$ terms of the integrals in \eqref{hnpi}. Therefore,  we only need compute $\delta_\pm^{n,k}(s)$ as the $O(\tau^k)$ term of the integrals in \eqref{hnpi} to get $\psi_\pm^{n,k}(s)=\psi_\pm^{n,k-1}(s)+\delta_\pm^{n,k}(s)$.  %We take the following polynomial expansion of $e^{\pm is\mathcal{D}}$ ($s\in[0,\tau]$)
+%\begin{equation}
+%e^{\pm is \mathcal{D}}=Id+\sum_{k=1}^\infty s^k \phi_k(\tau\mathcal{D}),
+%\end{equation}
+%where function $\phi_k(w)$ ($w$) satisfies $1+\sum_{j=1}^k\phi_j(k\tau)=e^{ik\tau}$ ($k=1,2,\cdots$).
+%Combining the expansions
+Using expansions in \eqref{eq:expansion} where the $k$-th term is of $O(\tau^k)$, we take the approximations
+\begin{align*}
+&e^{\mp i\mathcal{D}_\varepsilon(s-w)}\approx e^{\mp i(s-w)/\varepsilon^2}\left(I+\sum\limits_{j=1}^{k-1}a^{\mp}_j(s-w)\left(\sin(\tau\mathcal{D})\right)^j
+\right),\\
+&\psi_+^{n,k-1}(w)+\psi_-^{n,k-1}(w)\approx e^{-iw/\varepsilon^2}\psi_+^{n}+e^{iw/\varepsilon^2}\psi_-^{n}+\sum\limits_{j=1}^{k-1}\sum\limits_{\sigma=\pm}\left(\delta_{\sigma}^{n,j}(w)+e^{\frac{-\sigma iw}{\varepsilon^2}} a^{-\sigma}_j(w)(\sin(\tau\mathcal{D}))^j\psi_{\sigma}^n\right).
+\end{align*}
+%and replacing $\mathcal{D}$ by $\text{sinc}(\tau \mathcal{D})=\frac{\sin(\mathcal{D}\tau)}{\tau}=\mathcal{D}+O(\tau \mathcal{D})$  ({\rm sinc} function is defined as $\text{sinc}(s)=\frac{\sin s}{s}$ ($s\neq0$) and $\text{sinc}(0)=1$) to avoid loss of regularity,
+ Denoting $\delta^{n,0}(w):=\delta^0(w;\psi_+^n,\psi_-^n)$ and $\delta^{n,j}(w):=\delta^j(w;\psi_+^n,\psi_-^n)$ ($j\ge1$) as
+\begin{align}\label{jth-term}
+\delta^{n,0}(w)=\sum\limits_{\sigma=\pm}e^{-\sigma iw/\varepsilon^2}\psi_\sigma^{n},\quad
+\delta^{n,j}(w)= \sum_{\sigma=\pm}\left(\delta_\sigma^{n,j}(w)+e^{\frac{-\sigma iw}{\varepsilon^2}} a^{-\sigma}_j(w)(\sin(\tau\mathcal{D}))^j\psi_{\sigma}^n\right),
+\end{align}
+we can derive the $O(\tau^{k-1})$ term in the integrand and $\delta_\pm^{n,k}(s)$ can be constructed as ($f(\psi)=\lambda|\psi|^2\psi$)
+\begin{equation}\label{eq:deltnk}
+\delta_\pm^{n,k}(s)=\pm \frac{i \lambda}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp \frac{i  (s-w)}{\varepsilon^2}}
+\sum\limits_{j=0}^{k-1}\left(a^{\mp}_{j}(s-w)\left(\sin(\tau\mathcal{D})\right)^j\left(\sum\limits_{(j_1,j_2,j_3)\in \mathcal{I}_j^k} \delta^{n,j_1}(w)\delta^{n,j_2}(w)\overline{\delta^{n,j_3}(w)}\right)\right)dw,
+\end{equation}
+where the index set $\mathcal{I}_j^k=\left\{(j_1,j_2,j_3)\in\mathbb{Z}^3|\sum\limits_{l=1}^3j_l=k-1-j,
+j_1,j_2,j_3\ge0,\right\}$ for $j=0,\cdots,k-1$, and the time integral can be evaluated exactly.
+%In practical computation, it is convenient to apply filters to the operators $\mathcal{D}^j$ appearing in the aforementioned polynomial expansions, e.g. replace $\mathcal{D}$ by $\text{sinc}(\tau \mathcal{D})=\frac{\sin(\mathcal{D}\tau)}{\tau}=\mathcal{D}+O(\tau \mathcal{D})$  ({\rm sinc} function is defined as $\text{sinc}(s)=\frac{\sin s}{s}$ ($s\neq0$) and $\text{sinc}(0)=1$) to avoid loss of regularity.
+For $k$-th order NPI, $\psi_\pm^{n+1}:=\psi_\pm^{n,k}(\tau)$ is then given by
+$\psi_\pm^{n+1}=\psi_\pm^{n,0}(\tau)+\delta_{\pm}^{n,1}(\tau)+\cdots\delta_{\pm}^{n,k}(\tau)$.
+\begin{rmk}
+From the constructions of $\delta_{\pm}^{n,k}(s)$, it is easy to verify that $\delta_{\pm}^{n,k}$ has the form
+\begin{equation*}
+\delta_{\pm}^{n,k}(s)=\sum_\alpha p_{m,\alpha}(s)\mathcal{F}_{m,\alpha}(\psi_+^n,\psi_-^n),\ \alpha=(\alpha_1,\dots,\alpha_m)\ \text{can be a m-index},
+\end{equation*}
+where $p_{k,\alpha}(s)$ are the scalar coefficients (integrals of the products of trigonometric polynomials and polynomials) and $\mathcal{F}_{m,\alpha}(\psi_+^n,\psi_-^n)$ only depends on the initial values $\psi_\pm^n$ on the interval $[t_n,t_{n+1}]$. Therefore, based on the proposed scheme, $\delta_{\pm}^{n,k}(s)$ can be computed exactly, i.e. the time integrals in \eqref{eq:deltnk} can be evaluated exactly.
+\end{rmk}
+
+Applying the above result, the {\bf $k$-th order NPI method} can be proposed as follows. For $\psi_\pm^0=\psi_\pm(0)$, the numerical approximations $\psi_\pm^{n+1}$ ($n\ge0$) are updated according to
+\begin{equation}
+\psi_\pm^{n+1}=e^{\mp i\mathcal{D}_\varepsilon \tau}\psi_\pm^{n}+\delta_{\pm}^{n,1}(\tau)+\cdots+\delta_{\pm}^{n,k}(\tau),\label{knpi}
+\end{equation}
+where $\delta_\pm^{n,m}(s):=\delta_\pm^m(s;\psi_+^n,\psi_-^n)$ ($s\in[0,\tau]$, $m=1,\cdots,k$) are defined in \eqref{eq:deltnk} and \eqref{jth-term}. The numerical approximation $\psi^n$ of the solution $\psi(x,t_n)$ to the original KG equation \eqref{problem} is then recovered from  \eqref{relation} as $\psi^n=\psi_+^n+\psi_-^n$. The {\bf first oder NPI} is constructed in \eqref{eq:npi1} as $\psi_{\pm}^{n+1}=\psi_{\pm}^{n,1}:=e^{\mp i\mathcal{D}_\varepsilon \tau}\psi_\pm^{n}+\delta_{\pm}^{n,1}(\tau)$.
+
+The {\bf second order NPI},  $\psi_{\pm}^{n+1}=\psi_{\pm}^{n,2}:=e^{\mp i\mathcal{D}_\varepsilon \tau}\psi_\pm^{n}+\delta_{\pm}^{n,1}(\tau)+\delta_{\pm}^{n,2}(\tau)$, can be stated as below by specifying $\delta_{\pm}^{n,2}$ i.e. evaluating \eqref{eq:deltnk} for $k=2$,
+\begin{align}
+&\delta_{\pm}^{n,2}(s)=p_{-2,1}(\pm s)\mathcal{G}_{1,\pm}^n+ p_{0,1}(\pm s)\mathcal{G}_{2,\pm}^n+ p_{2,1}(\pm s)\mathcal{G}_{2,\mp}^n+ p_{4,1}(\pm s)\mathcal{G}_{1,\mp}^n \pm\sum_{k=1}^6\sum\limits_{\sigma=\pm}q_{k,\sigma}(\pm s)\mathcal{F}_{2,k,\pm\sigma}^n,\nonumber\\
+&\qquad\qquad\mp sp_{-2}(\pm s)\mathcal{B}\mathcal{F}_{1,\pm}^n\mp s p_0(\pm s)\mathcal{B}\mathcal{F}_{2,\pm}^n\mp sp_{2}(\pm s)\mathcal{B}\mathcal{F}_{2,\mp}^n\mp s p_{4}(\pm s)\mathcal{B}\mathcal{F}_{1,\mp}^n,\nonumber\\
+&\mathcal{G}_{1,\pm}^n:=\mathcal{G}_{1,\pm}(\psi_+^n,\psi_-^n)=\mathcal{A}\left[\mathcal{B}((\psi_\pm^n)^2\overline{\psi_\mp^n})\pm \left((\psi_\pm^n)^2\overline{\mathcal{B}\psi_\mp^n}-2(\mathcal{B}\psi_\pm^n)\psi_\pm^n\overline{\psi_\mp^n}\right)\right],\nonumber\\
+&\mathcal{G}_{2,\pm}^n:=\mathcal{G}_{2,\pm}(\psi_+^n,\psi_-^n)=\mathcal{A}\bigg[
+\mathcal{B}(2|\psi_\mp^n|^2+|\psi_\pm^n|^2)\psi_\pm^n \pm\big(2\psi_\pm^n\overline{\psi_\mp^n}(\mathcal{B}\psi_\mp^n)-2(|\psi_\pm^n|^2+|\psi_{\mp}^n|^2)(\mathcal{B}\psi_\pm^n)\nonumber\\
+&\hskip2cm\qquad\qquad\qquad-(\psi_\pm^n)^2\overline{\mathcal{B}\psi_\pm^n}+2\psi_\pm^n\psi_\mp^n\overline{(\mathcal{B}\psi_\mp^n)}\big)
+\bigg],
+\nonumber\\
+&\mathcal{F}_{2,m,\pm}^n:=\mathcal{F}_{2,m,\pm}(\psi_+^n,\psi_-^n)=
+\mathcal{A}\left(2(|\psi_+^n|^2+|\psi_-^n|^2)\mathcal{F}_{m,\mp}^n- 2\psi_+^n\psi_-^n\overline{\mathcal{F}_{m,\pm}^n}\right),\quad m=1,2;\nonumber\\
+&\mathcal{F}_{2,m+2,\pm}^n:=\mathcal{F}_{2,m+2,\pm}(\psi_+^n,\psi_-^n)=
+\mathcal{A}\left(2\psi_{\mp}^n\overline{\psi_{\pm}^n}\mathcal{F}_{m,\mp}^n- (\psi_\mp^n)^2\overline{\mathcal{F}_{m,\pm}^n}\right),\quad m=1,2;\nonumber\\
+&\mathcal{F}_{2,m+4,\pm}^n:=\mathcal{F}_{2,m+4,\pm}(\psi_+^n,\psi_-^n)=
+\mathcal{A}\left(2\psi_{\pm}^n\overline{\psi_{\mp}^n}\mathcal{F}_{m,\mp}^n- (\psi_\mp^n)^2\overline{\mathcal{F}_{m,\pm}^n}\right),\quad m=1,2.\nonumber
+ \end{align}
+ where the operator $ \mathcal{B}=\frac{i}{\tau}\sin(\tau\mathcal{D})$, and we use the notation $\pm\sigma=+$ ($\sigma=+,-$) for the cases of $++$ and $--$, and $\pm\sigma=-$ for the cases of $+-$ and $-+$. The coefficients are given below
+\begin{align}
+p_{0,1}(s)=&e^{\frac{-is}{\varepsilon^2}}\frac{s^2}{2},\quad
+ p_{\pm2,1}(s)=e^{\frac{-is}{\varepsilon^2}}\int_{0}^{s}we^{\frac{\pm2iw}{\varepsilon^2}}dw,\quad p_{4,1}(s)=e^{\frac{-is}{\varepsilon^2}}\int_{0}^{s}we^{\frac{4iw}{\varepsilon^2}}dw,\nonumber\\
+ q_{1,\pm}(s)=&\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}} (p_{-2}(\mp w)+p_4(\pm w))\,dw,\quad
+q_{2,\pm}(s)=\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+(p_2(\pm w)+p_0(\mp w))\,dw,\nonumber\\
+q_{3,\pm}(s)=&\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\pm 2iw}{\varepsilon^2}} (p_{-2}(\mp w)+p_4(\pm w))\,dw,\quad
+q_{4,\pm}(s)=\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\pm 2iw}{\varepsilon^2}} (p_2(\pm w)+p_0(\mp w))\,dw,\nonumber\\
+q_{5,\pm}(s)=&\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\mp 2iw}{\varepsilon^2}} (p_{-2}(\mp w)+p_4(\pm w))\,dw,\quad
+q_{6,\pm}(s)=\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\mp 2iw}{\varepsilon^2}} (p_2(\pm w)+p_0(\mp w))\,dw.\nonumber
+\end{align}
+
+The third order NPI method is described in Appendix.
+
+
+
+%\begin{align}
+%&\delta_\pm^{n,1}(s)=\pm \frac{i \lambda}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp \frac{i  (s-w)}{\varepsilon^2}}
+%|\delta^{n,0}|^2\delta^{n,0}dw\label{eq:del1},\\
+%&\delta_\pm^{n,2}(s)=\pm \frac{i \lambda}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp \frac{i  (s-w)}{\varepsilon^2}}
+%[\mp i(s-w)\mathcal{D}|\delta^{n,0}|^2\delta^{n,0}+ (\delta^{n,0})^2\bar{\delta}^{n,1}+2|\delta^{n,0}|^2\delta^{n,1}]dw\label{eq:del2},\\
+%&\delta_\pm^{n,3}(s)=\pm \frac{i \lambda}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp \frac{i  (s-w)}{\varepsilon^2}}
+%[(\mp i(s-w)\mathcal{D})^2/2|\delta^{n,0}|^2\delta^{n,0}\\
+%& \mp i(s-w)\mathcal{D}((\delta^{n,0})^2\bar{\delta}^{n,1}+2|\delta^{n,0}|^2\delta^{n,1})
+%+(\delta^{n,0})^2\bar{\delta}^{n,2}+2|\delta^{n,1}|^2\delta^{n,0} +2|\delta^{n,0}|^2\delta^{n,2}]dw \label{eq:del3},
+%\end{align}
+%
+%The details of the exact construction and programming for the third-order NPI method can be found in Appendix.
+%
+%Now we establish the convergence for the time semi-discrete scheme of the arbitrary higher-order NPI method.
+\begin{rmk}\label{rmk:bd}Though we present the NPI for KG equation \eqref{problem} on the whole space, the discussion also works for the bounded domain case, e.g. torus with periodic boundary conditions or bounded domain with homogeneous boundary conditions. When spatial domain and boundary conditions change, one only need to properly treat the domain of the operator $\mathcal{D}_\varepsilon$.
+\end{rmk}
+\section{Uniform error analysis for the semi-discrete-in-time  NPI}
+\label{sec:ana}
+Here, we will rigorously establish error estimates of the NPI scheme \eqref{knpi} in the semi-discrete form. Let $0<T<T^{*}$ with $T^{*}$  being the uniform maximum existence time of the solution $\psi(x,t)$ to the KG equation \eqref{problem} for $\varepsilon\in(0,1]$,  motivated by the results in \cite{Nested:2018,Comparison:2019}, we assume
+\begin{align*}
+(A):\ &\psi_0(x), \psi_1(x)\in H^{j}(\mathbb{R}^d), \quad\sup_{\varepsilon\in(0,1]}\|\psi(x,t)\|_{L^{\infty}([0,T];H^{j}(\mathbb{R}^d))}\leq C_k,%\\
+%&\ H^{1}_{p}:=\{u|\partial_x u\in L^2(a,b) \partial_xu(x)=\partial_xu(x+b-a)\}.
+\end{align*}
+For $\alpha>\frac{d}{2}$, under the above assumption (A) with $j\ge\alpha$, we have
+\begin{equation}\label{eq:infitybd}
+M_0=\sup\limits_{\varepsilon\in(0,1]}\|\psi(x,t)\|_{L^{\infty}([0,T];H^\alpha(\mathbb{R}^d))}<\infty.
+\end{equation}
+Recalling the auxiliary (twisted) variables $\psi_\pm(x,t)$ \eqref{twist}, under assumption (A), we have $\psi_\pm(x,t)=\frac{1}{2}(\psi(x,t)\pm i\mathcal{D}_\varepsilon^{-1}\partial_t\psi(x,t))$ satisfy
+\eqref{twist:int} and $\psi_\pm(x,0)\in H^{j}(\mathbb{R}^d)$, which implies
+\begin{equation}
+\sup\limits_{\varepsilon\in(0,1]}\|\psi_\pm(x,t)\|_{L^{\infty}([0,T];H^{j}(\mathbb{R}^d))}\lesssim 1,
+\quad
+M_1=\sup\limits_{\varepsilon\in(0,1]}\|\psi_\pm(x,t)\|_{L^{\infty}([0,T];H^\alpha(\mathbb{R}^d))}<\infty.
+\end{equation}
+%To analyze the error bounds of numerical solution, some useful lemmas will be introduced.
+%%\begin{lemma}[Sobolev's Inequality \cite{wang:2007} ]\label{lemma2} For $\psi^{n}\in X_{h}$. Given $\kappa >0$, there exists a positive constant $C(\kappa)$ dependent on $\kappa$ such that
+%%$$\|\psi^{n}\|_{\infty}\leq\kappa\|\delta_{x} \psi^{n}\|+C(\kappa)\|\psi^{n}\|.$$
+%%\end{lemma}
+%
+%\begin{lemma}[Gronwall's Inequality \cite{wang:2007}]\label{lemma3} Suppose that the nonnegative mesh functions $w(n),\rho(n),n = 1,2,...,N,N\tau = T$ satisfy the inequality
+%$$w(n) \le \rho (n) + \tau \sum\limits_{l = 1}^n {{B_l}} w(l),$$
+%where ${B_l}(l = 1,2,...,N)$ are nonnegative constant. Then for any $0 \le n \le N$, it holds
+%$$w(n) \le \rho (n)\exp (T \sum\limits_{l = 1}^N {{B_l}} ).$$
+%\end{lemma}
+
+Let  $\psi_{\pm}^{n}(x)$ and $\psi^n(x)$ ($n\ge0$) be the numerical approximations of $\psi_\pm(x,t_n)$  and $\psi(x,t_n)$ obtained by $k$-th order NPI ($\psi_\pm^{0}=\psi_\pm(x,t_0)$), respectively.
+
+%Define the 'error' functions as
+%\begin{align*}
+%&e_{\pm}^{n,k}(x):=\psi_{\pm}(t_{n}+s)- \psi_{\pm}^{n,k}(x),\,
+%e_{\pm}^{n}(x):=\psi_{\pm}(t_{n},x)- \psi_{\pm}^{n}(x),\ n\geq 0,\\
+%&e_{\pm}^{n+1}(x):=e_{\pm}^{n,k},\ \|e_{\pm}^{0}(x)\|_{L^2}=0.
+%\end{align*}
+
+
+\begin{theorem}\label{thm:main}
+Under assumptions (A) with $j=2k+\alpha$ ($\alpha>\frac{d}{2}$), there exists $\tau_{0}\geq 0$ which is sufficiently small, when $0\leq \tau\leq \tau_{0}$, scheme \eqref{knpi} satisfies the following optimal error estimates:
+\begin{align}\label{eq:main}
+&\|\psi_{\pm}(x,t_{n})- \psi_{\pm}^{n}(x)\|_{H^{\alpha}}\lesssim\tau^k,\quad \|\psi_{\pm}^n(\cdot)\|_{H^\alpha}\leq M_1+1,\; 0\leq n\leq \frac{T}{\tau},%\\
+%&\|\psi_{\pm}^n(\cdot)\|_{H^\alpha}\leq M_1+1,\quad  n=0,\cdots,\frac{T}{\tau}-1.
+\end{align}
+and it follows that $\|\psi(x,t_{n})- \psi^{n}(x)\|_{H^{\alpha}} \lesssim \tau^k$ ($0\leq n\leq \frac{T}{\tau}-1$).
+\end{theorem}
+
+Recalling the definitions of $\delta_\pm^{n,m}(s):=\delta_\pm^n(s;\psi_+^n,\psi_-^n)$ ($s\in[0,\tau]$, $m=0,1,\cdots,k$) in \eqref{eq:deltnk} and \eqref{jth-term} and replacing $\psi_\pm^n$ by $\psi_\pm(t_n)$, we define the local error function $\xi_\pm^n(x)$ for $k$-th order NPI at $t_{n}$ ($n\ge$) as
+\begin{equation}\label{eq:localerr}
+\xi_\pm^n(x)=\psi_{\pm}(x,t_{n+1})-\left(e^{\mp i\mathcal{D}_\varepsilon \tau}\psi_\pm(x,t_n)+\delta_{\pm}^{1}(\tau;\psi_+(t_n),\psi_-(t_n))+\cdots+\delta_{\pm}^{k}(\tau;\psi_+(t_n),\psi_-(t_n))\right).
+\end{equation}
+ The following lemma regarding the local error is important.
+\begin{lemma}\label{lm:local} Under assumption (A) with $j=2k+\alpha$ ($\alpha>\frac{d}{2}$), we have the local error bounds for \eqref{eq:localerr} as
+\begin{equation}
+\|\xi_\pm^n(\cdot)\|_{H^\alpha}\lesssim \tau^{k+1},\quad 0\leq n\leq \frac{T}{\tau}-1.
+\end{equation}
+\end{lemma}
+\begin{proof} The local error bounds could be directly verified from the construction of NPI \eqref{knpi} and we omit the details here for brevity.  Noticing that we use $\sin(\tau\mathcal{D})$ instead of $\mathcal{D}$ in the expansion \eqref{eq:expansion}, by expanding $\sin(\tau\mathcal{D})$ into the series of $\mathcal{D}$ (understood in the phase space), we would recover the usual Taylor expansion of $e^{\pm is \mathcal{D}}$. For $k$-th  NPI, the next order residue in the expansion is  $O(\mathcal{D}^{k})$, which leads to the local error bounds with assumed regularity in view of the fact that $\mathcal{D}: H^s(\mathbb{R}^d)\to H^{s-2}(\mathbb{R}^d)$ is uniformly bounded w.r.t. $\varepsilon$.
+\end{proof}
+
+
+To control the nonlinearity, for the iterations in NPI \eqref{knpi}, we have the following estimates regarding $\delta_{\pm}^{m}(s;\phi_+,\phi_-)$ \eqref{eq:deltnk} and $\delta^{m}(s;\phi_+,\phi_-)$ \eqref{jth-term}  for $\phi_\pm(x)\in H^\alpha(\mathbb{R}^d)$.
+\begin{lemma}\label{lm:nonlinear} Assuming $\|\phi_\pm(\cdot)\|_{H^\alpha}\leq M_1+1$ and $\tau<1$, there exists a positive constant $C_{M_1}$ only depending on $M_1$, $k$, $\alpha$ and $\lambda$ such that
+\begin{equation}\label{eq:deltbd-1}
+\|\delta_{\pm}^{m}(s;\phi_+,\phi_-)\|_{H^\alpha}\leq C_{M_1},\quad s\in [0,\tau],\quad m=0,1,\ldots,k.
+\end{equation}
+In addition, for $\| \varphi_\pm(\cdot)\|_{H^\alpha}\leq M_1+1$, we have the (local) Lipschitz properties
+\begin{equation}\label{eq:deltlp-1}
+\|\delta_{\pm}^{m}(s;\phi_+,\phi_-)-\delta_{\pm}^{m}(s;\varphi_+,\varphi_-)\|_{H^\alpha}\leq \tau L_{M_1}\sum\limits_{\sigma=\pm}\|\phi_\sigma-\varphi_\sigma\|_{H^\alpha},\quad s\in [0,\tau],\quad
+m=1,\ldots,k,
+\end{equation}
+where $L_{M_1}>0$ only depends on $M_1$, $k$, $\alpha$ and $\lambda$.
+\end{lemma}
+\begin{proof} Noticing   $\sin(\tau\mathcal{D}): H^\alpha\to H^\alpha$ and $\varepsilon^{-2}\mathcal{D}_\varepsilon^{-1}: H^\alpha\to H^\alpha$ are bounded (1 is an upper bound),  recalling the fact that $H^\alpha(\mathbb{R}^d)$ ($\alpha>d/2$) is an algebra, we obtain from  \eqref{jth-term}  and \eqref{eq:deltnk} that $\|\delta^0(s;\phi_+,\phi_-)\|_{H^\alpha}\leq 2(M_1+1)$ ($s\in[0,\tau]$),
+\begin{equation*}
+\|\delta_\pm^1(s;\phi_+,\phi_-)\|\leq \frac{|\lambda|C_\alpha \tau}{2}\|\delta^0(\cdot;\phi_+,\phi_-)\|_{L^\infty([0,\tau];H^\alpha)}^3\leq 4C_\alpha|\lambda|\tau(M_1+1)^3,
+\end{equation*}
+where $C_\alpha$ is a constant depending on $d$ and $\alpha$ for the inequality $\|\phi_1\phi_2\phi_3\|_{H^\alpha}\leq C_\alpha \|\phi_1\|_{H^\alpha}\|\phi_2\|_{H^\alpha}\|\phi_3\|_{H^\alpha}$.
+Continuing  the above estimates for $m=2,\cdots,k$ from \eqref{jth-term}  and \eqref{eq:deltnk}, it is easy to derive \eqref{eq:deltbd-1}. In particular, the upper bounds in \eqref{eq:deltbd-1} for $\delta_{\pm}^m(s;\cdot,\cdot)$ ($m=1,\cdots,k$) is proportional to $\tau$ and can be made arbitrary small  by choosing small enough $\tau$.
+
+For the (local) Lipschitz property, we could similarly obtain
+\begin{equation*}
+\|\delta^0(s;\phi_+,\phi_-)-\delta^0(s;\varphi_+,\varphi_-)\|_{H^\alpha}\leq \sum\limits_{\sigma=\pm}\|\phi_\sigma-\varphi_\sigma\|_{H^\alpha}, \quad s\in[0,\tau]
+\end{equation*}
+and \eqref{eq:deltnk} would yield for $\delta^1_\pm(s;\cdot,\cdot)$
+\begin{align*}
+\|\delta^1_\pm(s;\phi_+,\phi_-)-\delta^1_\pm(s;\varphi_+,\varphi_-)\|_{H^\alpha} \leq &|\lambda|\tau C_\alpha \|\delta^0(\cdot;\phi_+,\phi_-)-\delta^0(\cdot;\varphi_+,\varphi_-)\|_{L^\infty([0,\tau]; H^\alpha)}\\
+&\times\left( \|\delta^0(\cdot;\phi_+,\phi_-)\|_{L^\infty([0,\tau]; H^\alpha)}^2+
+\|\delta^0(\cdot;\varphi_+,\varphi_-)\|_{L^\infty([0,\tau]; H^\alpha)}^2\right)\\
+\leq &2|\lambda|C_\alpha\tau (M_1+1)^2 \sum\limits_{\sigma=\pm}\|\phi_\sigma-\varphi_\sigma\|_{H^\alpha} ,
+\end{align*}
+i.e. \eqref{eq:deltlp-1} holds for $m=1$. The cases with $m=2,\cdots,k$ can be verified in the same way using \eqref{eq:deltnk} and the established stability results for $0,1,\cdots,m-1$. The detail is omitted here.
+\end{proof}
+
+We are now ready to prove Theorem \ref{thm:main}.
+
+{\it Proof of Theorem \ref{thm:main}.}
+Introducing the error functions $e_\pm^n(x)$ for $n\ge0$ as
+\begin{equation}\label{eq:error}
+e_\pm^n(x)=\psi_\pm(x,t_n)-\psi_\pm^n(x),
+\end{equation}
+then subtracting \eqref{knpi} from \eqref{eq:localerr}, we have the error equation  for $n\ge0$ as
+\begin{equation}\label{eq:errorgrowth}
+e_{\pm}^{n+1}(x)=e^{\mp i\mathcal{D}_\varepsilon\tau}e_\pm^n(x)+\sum\limits_{m=1}^k\left(
+\delta_{\pm}^m(\tau;\psi_+(t_n),\psi_-(t_n))-\delta_{\pm}^m(\tau;\psi_+^n,\psi_-^n)\right)+\xi_\pm^n(x).
+\end{equation}
+We will prove  \eqref{eq:main} in Theorem \ref{thm:main} by induction. For $n=0$, it is clear $e_{\pm}^0=0$ and the estimates in \eqref{eq:main} hold for $n=0$.
+
+Assume the estimates in \eqref{eq:main} hold for $n=0,\cdots, N\leq\frac{T}{\tau}-1$,  we are going to prove the case $n=N+1$ is also true in \eqref{eq:main}. By induction hypothesis, from Lemma \ref{lm:nonlinear},  recalling the error equation \eqref{eq:errorgrowth}, we have
+\begin{align*}
+\|e_\pm^{n+1}(\cdot)\|_{H^\alpha}\leq &\|e_\pm^n(\cdot)\|_{H^\alpha}+\tau L_{M_1}\sum\limits_{m=1}^k\sum\limits_{\sigma=\pm}\|\psi_\sigma(x,t_n)-\psi_\sigma^n(x)\|_{H^\alpha}+\|\xi_\pm^n(x)\|_{H^\alpha}\\
+ \leq &\|e_\pm^n(\cdot)\|_{H^\alpha}+\tau kL_{M_1}\sum\limits_{\sigma=\pm}\|e_\sigma^n(x)\|_{H^\alpha}+\|\xi_\pm^n(x)\|_{H^\alpha},\quad n=0,\cdots,N.
+\end{align*}
+Denoting $S^n=\|e_+^n(x)\|_{H^\alpha}+\|e_-^n(x)\|_{H^\alpha}$, we have for $n=0,\cdots,N$
+\begin{equation}
+S^{n+1}\leq S^n+\tau kL_{M_1}S^n+\|\xi_+^n(x)\|_{H^\alpha}+\|\xi_-^n(x)\|_{H^\alpha},
+\end{equation}
+and
+\begin{equation}
+S^{n+1}\leq \tau kL_{M_1}\sum\limits_{m=0}^nS^m+\sum_{m=0}^n\left(\|\xi_+^m(x)\|_{H^\alpha}+\|\xi_-^m(x)\|_{H^\alpha}\right).
+\end{equation}
+Using local truncation error estimates in Lemma \ref{lm:local} and discrete Gronwall  inequality, we derive for some constant  $C$ independent of $\varepsilon$ (depending on $k,\tau,L_{M_1},T$ and the constants in the local error \eqref{eq:localerr}) that
+\begin{equation}
+S^{n+1}\leq C n\tau^{k+1}\leq CT\tau^k,\quad n=0,1,\cdots,N.
+\end{equation}
+Thus $\|e_\pm^{N+1}(x)\|_{H^\alpha}\leq CT\tau^k$ and for $\tau<\frac{1}{(CT)^{1/k}}$, we know
+\begin{equation}
+\|\psi_\pm^{N+1}\|_{H^\alpha}\leq \|\psi_\pm(x,t_{N+1})\|_{H^\alpha}+\|e_\pm^{N+1}(x)\|_{H^\alpha}
+\leq M_1+1,
+\end{equation}
+which verifies \eqref{eq:main} for $n=N+1$. The induction process is complete and the results in Theorem \ref{thm:main} follow.
+$\hfill\Box$
+%\begin{proof}
+%Now, we will prove the results by utilizing the induction method. Firstly, we can prove the result for $k=0,1,2$ as follow.\\
+%$\mathbf{Step}\ 1.1:$ Subtracting \eqref{0npi} from \eqref{es1}, we get the error functions as
+%\begin{equation*}
+%e_{\pm}^{n,0}=e^{\mp i\mathcal{D}_{\varepsilon} s}e_{\pm}^n\pm \frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp i D_\varepsilon (s-w)} f(\psi_+(t_n+w)+\psi_-(t_n+w))\,dw,
+%\end{equation*}
+%then, taking the $L^2,H^1$ inner product of the above equations by itself, using Cauchy's inequality and assumption (A), we obtain
+%\begin{align*}
+%&\|e_{\pm}^{n,0}\|_{L^2}^2\leq 2(\|e_{\pm}^n\|_{L^2}^2+w^2M_1^6),\\
+%&\|e_{\pm}^{n,0}\|_{H^1}^2\leq 2(\|e_{\pm}^n\|_{H^1}^2+w^2M_1^6),
+%\end{align*}
+%it can be deduced that
+%\begin{align*}
+%&\|e_{\pm}^{n,0}\|_{L^2}\leq \sqrt{2}(\|e_{\pm}^n\|_{L^2}+wM_1^3),\\
+%&\|e_{\pm}^{n,0}\|_{H^1}\leq \sqrt{2}(\|e_{\pm}^n\|_{H^1}+wM_1^3),
+%\end{align*}
+%using the Lemma \ref{lemma3}, we can get
+%\begin{align*}
+%&\|e_{\pm}^{n,0}\|_{L^2}\leq M_1^3,\\
+%&\|e_{\pm}^{n,0}\|_{H^1}\leq M_1^3.
+%\end{align*}
+
+%
+%$\mathbf{Step}\ 1.2:$\\
+%Similarly, we can do the same thing for $\psi_{\pm}^{n,1}$, and get
+%\begin{align*}
+%e_{\pm}^{n,1}=e^{\mp i\mathcal{D}_{\varepsilon} s}e_{\pm}^n
+%&\pm\frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp i(s-w)/\varepsilon^2}
+%[f(\psi_+(t_n+w)+\psi_-(t_n+w)) -f(\psi_+^{n,0}+\psi_-^{n,0})]\,dw\\
+%&\pm\frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp i(s-w)/\varepsilon^2}
+%[f(\psi_+^{n,0}+\psi_-^{n,0})- f(\delta^{n,0})(w)]\,dw\\
+%&\pm\frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s [e^{\mp i \mathcal{D}_\varepsilon (s-w)}- e^{\mp i(s-w)/\varepsilon^2}] f(\psi_+(t_n+w)+\psi_-(t_n+w))\,dw,
+%\end{align*}
+%then, taking the $L^2,H^1$ inner product of the above equations by itself, using Cauchy's inequality and assumption (A), we have
+%\begin{align*}
+%&\|e_{\pm}^{n,1}\|_{L^2}^2\leq 2\{\|e_{\pm}^n\|^2_{L^2}+ w^2\|e_{\pm}^{n,0}\|_{L^2}^2
+%+w^4M_1^6\},\\
+%&\|e_{\pm}^{n,1}\|_{H^1}^2\leq 2\{\|e_{\pm}^n\|^2_{H^1}+ w^2\|e_{\pm}^{n,0}\|_{H^1}^2
+%+w^4M_1^6\},
+%\end{align*}
+%applying the result of $\|e_{\pm}^{n,0}\|_{L^2},\|e_{\pm}^{n,0}\|_{H^1}$, we have
+%\begin{align*}
+%&\|e_{\pm}^{n,1}\|_{L^2}\leq \|e_{\pm}^{n}\|_{L^2}+w(\|e_{\pm}^{n,0}\|_{L^2}+wM_1^3),\\
+%&\|e_{\pm}^{n,1}\|_{H^1}\leq \|e_{\pm}^{n}\|_{H^1}+w(\|e_{\pm}^{n,0}\|_{H^1}+wM_1^3),
+%\end{align*}
+%using Lemma \ref{lemma3}, we can obtain
+%\begin{align*}
+%&\|e_{\pm}^{n,1}\|_{L^2}\leq wM_1^3,\\
+%&\|e_{\pm}^{n,1}\|_{H^1}\leq wM_1^3.
+%\end{align*}
+
+
+
+%$\mathbf{Step}\ 1.3:$
+%Now, we give the result for $\psi_{\pm}^{n,2}$, and get
+%\begin{align*}
+%e_{\pm}^{n,2}=e^{\mp i\mathcal{D}_{\varepsilon} s}e_{\pm}^n
+%&\pm\frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp i\mathcal{D}_{\varepsilon}(s-w)}
+%f(\psi_+^{n,0}+\psi_-^{n,0})\,dw -\delta_{\pm}^{n,1}\\
+%&- \pm \frac{i \lambda}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp \frac{i  (s-w)}{\varepsilon^2}}
+%\mp i(s-w)\mathcal{D}|\delta^{n,0}|^2\delta^{n,0}dw\\
+%&\pm\frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^w e^{\mp i \mathcal{D}_\varepsilon (s-w)}
+%[f(\psi_+^{n,1}+\psi_-^{n,1})- f(\psi_+^{n,0}+\psi_-^{n,0})]\,dw\\
+%&- \pm \frac{i \lambda}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp \frac{i  (s-w)}{\varepsilon^2}}
+%[(\delta^{n,0})^2\bar{\delta}^{n,1}+2|\delta^{n,0}|^2\delta^{n,1}]dw\\
+%&\pm\frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^w e^{\mp i \mathcal{D}_\varepsilon (s-w)}
+%[ f(\psi_+(t_n+w)+\psi_-(t_n+w))- f(\psi_+^{n,1}+\psi_-^{n,1})]\,dw,
+%\end{align*}
+%then, taking the $L^2,H^1$ inner product of the above equations by itself, using Cauchy's inequality and assumption (A), we have
+%\begin{align*}
+%&\|e_{\pm}^{n,2}\|_{L^2}^2\leq 2\{\|e_{\pm}^n\|^2_{L^2}+ w^2\|e_{\pm}^{n,1}\|_{L^2}^2
+%+w^6M_1^6\},\\
+%&\|e_{\pm}^{n,2}\|_{H^1}^2\leq 2\{\|e_{\pm}^n\|^2_{H^1}+ w^2\|e_{\pm}^{n,1}\|_{H^1}^2
+%+w^6M_1^6\},
+%\end{align*}
+%then
+%\begin{align*}
+%&\|e_{\pm}^{n,2}\|_{L^2}\leq \|e_{\pm}^{n}\|_{L^2}+ w(w^2M_1^3+\|e_{\pm}^{n}\|_{L^2}),\\
+%&\|e_{\pm}^{n,2}\|_{H^1}\leq \|e_{\pm}^{n}\|_{H^1}+ w(w^2M_1^3+\|e_{\pm}^{n}\|_{H^1}),
+%\end{align*}
+%using the Lemma \ref{lemma3}, one can prove that
+%\begin{align*}
+%&\|e_{\pm}^{n,2}\|_{L^2}\leq w^2M_1^3,\\
+%&\|e_{\pm}^{n,2}\|_{H^1}\leq w^2M_1^3.
+%\end{align*}
+%
+%$\mathbf{Step}\ 2:$
+%Then, we assume that Theorem \ref{Theorem1} holds for $m<k$.
+%Now, we give the result for $\psi_{\pm}^{n,k}$, and get
+%\begin{align*}
+%e_{\pm}^{n,k}&=e^{\mp i\mathcal{D}_{\varepsilon} s}e_{\pm}^n\\
+%&\pm\frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp i\mathcal{D}_{\varepsilon}(s-w)}
+%f(\psi_+^{n,0}+\psi_-^{n,0})\,dw \\
+%&-\pm \frac{i \lambda}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp \frac{i  (s-w)}{\varepsilon^2}}
+%\sum\limits_{j=0}^{k-1}\left(\frac{(\mp i(s-w))^{k-1-j}\sin(\mathcal{D}^{k-1-j}\xi)}{(k-1-j)!\xi}\left(\sum\limits_{{\tiny\begin{array}{c}j_1+j_2+j_3=0\\
+%j_1,j_2,j_3\ge0\end{array}}} \delta^{n,j_1}(w)\delta^{n,j_2}(w)\overline{\delta^{n,j_3}(w)}\right)\right)dw\\
+%&\pm\frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^w e^{\mp i \mathcal{D}_\varepsilon (s-w)}
+%[f(\psi_+^{n,1}+\psi_-^{n,1})- f(\psi_+^{n,0}+\psi_-^{n,0})]\,dw\\
+%&- \pm \frac{i \lambda}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp \frac{i  (s-w)}{\varepsilon^2}}
+%\sum\limits_{j=0}^{k-1}\left(\frac{(\mp i(s-w))^{k-1-j}\sin(\mathcal{D}^{k-1-j}\xi)}{(k-1-j)!\xi}\left(\sum\limits_{{\tiny\begin{array}{c}j_1+j_2+j_3=1\\
+%j_1,j_2,j_3\ge0\end{array}}} \delta^{n,j_1}(w)\delta^{n,j_2}(w)\overline{\delta^{n,j_3}(w)}\right)\right)dw\\
+%&\dots\\
+%&\pm\frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^w e^{\mp i \mathcal{D}_\varepsilon (s-w)}
+%[f(\psi_+^{n,k-1}+\psi_-^{n,k-1})- f(\psi_+^{n,k-2}+\psi_-^{n,k-2})]\,dw\\
+%&- \pm \frac{i \lambda}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^s e^{\mp \frac{i  (s-w)}{\varepsilon^2}}
+%\sum\limits_{j=0}^{k-1}\left(\frac{(\mp i(s-w))^{k-1-j}\sin(\mathcal{D}^{k-1-j}\xi)}{(k-1-j)!\xi}\left(\sum\limits_{{\tiny\begin{array}{c}j_1+j_2+j_3=k-1\\
+%j_1,j_2,j_3\ge0\end{array}}} \delta^{n,j_1}(w)\delta^{n,j_2}(w)\overline{\delta^{n,j_3}(w)}\right)\right)dw\\
+%&\pm\frac{i}{2\varepsilon^2\mathcal{D}_{\varepsilon} }\int_0^w e^{\mp i \mathcal{D}_\varepsilon (s-w)}
+%[ f(\psi_+(t_n+w)+\psi_-(t_n+w))- f(\psi_+^{n,k-1}+\psi_-^{n,k-1})]\,dw,
+%\end{align*}
+%noting $\xi^2=w^{k}$, taking the $L^2,H^1$ inner product of the above equations by itself, using Cauchy's inequality and assumption (A), we have
+%\begin{align*}
+%&\|e_{\pm}^{n,k}\|_{L^2}^2\leq 2\{\|e_{\pm}^n\|^2_{L^2}+ w^2\|e_{\pm}^{n,k-1}\|_{L^2}^2
+%+w^{2*k+2}M_1^6\},\\
+%&\|e_{\pm}^{n,k}\|_{H^1}^2\leq 2\{\|e_{\pm}^n\|^2_{H^1}+ w^2\|e_{\pm}^{n,k-1}\|_{H^1}^2
+%+w^{2*k+2}M_1^6\},
+%\end{align*}
+%then
+%\begin{align*}
+%&\|e_{\pm}^{n,k}\|_{L^2}\leq \|e_{\pm}^{n}\|_{L^2}+ w(w^{2k}M_1^3+\|e_{\pm}^{n}\|_{L^2}),\\
+%&\|e_{\pm}^{n,k}\|_{H^1}\leq \|e_{\pm}^{n}\|_{H^1}+ w(w^{2k}M_1^3+\|e_{\pm}^{n}\|_{H^1}),
+%\end{align*}
+%using the Lemma \ref{lemma3}, one can prove that
+%\begin{align*}
+%&\|e_{\pm}^{n,k}\|_{L^2}\leq w^{2k}M_1^3,\\
+%&\|e_{\pm}^{n,k}\|_{H^1}\leq w^{2k}M_1^3.
+%\end{align*}
+%This completes the proof.
+%\end{proof}
+\section{Application to a real-valued quadratic NLKG}
+\label{sec:qkg}
+The aforementioned NPI constructions are valid for NLKG \eqref{problem} with general polynomial type nonlinearities. Moreover, if the scalar field in NLKG \eqref{problem} is real, i.e. $\psi(x,t)\in\mathbb{R}$ and the initial data $\psi_0,\psi_1\in\mathbb{R}$, the computations will be simplified as $\psi_+(x,t)=\overline{\psi_-(x,t)}$ in \eqref{twist}. The consequence is that the NPI \eqref{knpi} would be simplified as $\psi^n=\psi_+^n+\psi_-^n=2\text{Re}(\psi_+^n)$, with $\psi+^n=\overline{\psi_-^n}$ and $\delta_+^{n,k}=\overline{\delta_-^{n,k}}$,
+\begin{equation}
+\psi_+^{n+1}=e^{- i\mathcal{D}_\varepsilon \tau}\psi_+^{n}+\delta_{+}^{n,1}(\tau)+\cdots+\delta_{+}^{n,k}(\tau).\label{knpi-r}
+\end{equation}
+Here, we show the application of our general NPI strategy applied to a real-valued quadratic NLKG:
+\begin{equation}\label{problem-r}
+\begin{split}
+&\varepsilon^2\partial_{tt}\psi(x,t)-\Delta\psi(x,t)+\frac{1}{\varepsilon^2}\psi(x,t)=f(\psi),\qquad x\in \mathbb{R}^d, t>0, \\
+&\psi(x,0)=\psi_0(x)\in\mathbb{R},\quad \partial_t\psi(x,0)=\frac{1}{\varepsilon^2}\psi_1(x)\in\mathbb{R}, \qquad x\in \mathbb{R}^d,
+\end{split}
+\end{equation}
+where $\psi(x,t)\in\mathbb{R}$ is a real scalar field and the nonlinear term is $f(\psi)=\lambda \psi^2$.
+We adopt the notations in Section \ref{sec:npi}.
+
+\section{Practical implementation and Fourier psedospectral discretization}
+\label{sec:fnpi}
+In practice, the KG equation \eqref{problem} is usually truncated onto a large enough bounded computational domain, e.g. an interval in 1D, a rectangle in 2D or a box in 3D, with periodic boundary conditions (or homogeneous Dirchlet boundary conditions), such that the truncation error is negligible. Here, we take 1D ($d=1$) for example. The KG equation \eqref{problem} is truncated on a bounded interval $[a,b]$ with periodic boundary conditions:
+\begin{equation}\label{eq:kg}
+\begin{split}
+&\varepsilon^2\partial_{tt}\psi(x,t)-\Delta\psi(x,t)+\frac{1}{\varepsilon^2}\psi(x,t)=f(\psi),\ x\in [a,b], t>0, \\
+&\psi(a,t)=\psi(b,t),\quad \partial_x\psi(a,t)=\partial_x\psi(b,t),\quad t>0\\
+&\psi(x,0)=\psi_0(x),\ \partial_t\psi(x,0)=\frac{1}{\varepsilon^2}\psi_1(x), \quad x\in [a,b].
+\end{split}
+\end{equation}
+As mentioned in Remark \eqref{rmk:bd}, the NPI \eqref{knpi} is directly applicable and the similar estimates in Theorem \ref{thm:main} hold. The choices of periodic truncation make the differential operators $\mathcal{D}_\varepsilon$ and $e^{\pm it\mathcal{D}_\varepsilon}$ easily and efficiently computable in phase space via Fast Fourier Transform in practice.
+
+
+Below, we describe the fully discretized NPI for solving \eqref{eq:kg}. It can be viewed by applying the Fourier spectral approximation to the time-discrete NPI schemes \eqref{knpi}. We describe the detailed implementation of the second-order NPI method.
+Let
+$$Y_{M}=\text{span}\{\varphi_{l}(x)=e^{i\mu_{l}(x-a)},\ \mu_{l}=\frac{2\pi l}{b-a}, \ x\in[a,b],\ -M/2\leq l\leq M/2-1\}.$$
+
+For any periodic function $v(x)$ on $[a,b]$ and vector $v\in X_{M}$, define $P_{M}:L^2(a,b)\rightarrow Y_{M}$ as the standard projection operator, $I_{M}:C(a,b)\rightarrow Y_{M}$ or $I_{M}:X_{M}\rightarrow Y_{M}$ as the trigonometric interpolation operators \cite{1multiscale:2014,finiteE:2012}, i.e.
+$$(P_{M}v)(x)=\sum_{l=-M/2}^{M/2-1}{\hat v}_{l}e^{i\mu_{l}(x-a)},\ (I_{M}v)(x)=\sum_{l=-M/2}^{M/2-1}{\tilde v}_{l}e^{i\mu_{l}(x-a)},\ x\in [a,b],$$
+with
+\begin{align}\label{coefficient}
+&{\hat v}_{l}=\frac{1}{b-a}\int_{a}^{b}v(x)e^{-i\mu_{l}(x-a)}dx,\ {\tilde v}_{l}=\frac{1}{M}\sum_{j=0}^{M-1}v_{j}e^{-i\mu_{l}(x_{j}-a)},
+\end{align}
+where $v_{j}$ is interpreted as $v(x_{j})$.
+
+The practical NPI Fourier pseudospectral scheme is introduced as
+%The Fourier spectral discretization of \eqref{problem} becomes:\\
+%Find $\psi_{M}(x,t)\in Y_{M}$, i.e.
+%\begin{align}\label{approximation}
+%&\psi_{M}(x,t)=\sum_{l=-M/2}^{M/2-1}{\hat \psi}_{l}(t)e^{i\mu_{l}(x-a)},\ x\in[a,b], t\geq 0,
+%\end{align}
+%such that
+%\begin{align}\label{approproblem}
+%&\varepsilon^2\partial_{tt}\psi_{M}(x,t)-\partial_{xx}\psi_{M}(x,t)+\frac{1}{\varepsilon^2}\psi_{M}(x,t)=P_{M}f(\psi_{M}),\ x\in[a,b],\ t\geq 0.
+%\end{align}
+%Substituting \eqref{approximation} into \eqref{approproblem}, noticing the orthogonality of the Fourier functions, for $l=-M/2,\dots,M/2-1,$ and $w\in{\mathbb R},$ when $t=t_{n}+w$ is near $t_{n}$, we have
+%\begin{align}
+%&{\hat \psi}_{l}^{''}(t_{n}+w)+\beta_{l}^2{\hat \psi}_{l}(t_{n}+w)=\frac{1}{\varepsilon^2}{\hat f_{l}^{n}}(w),
+%\end{align}
+%where
+%\begin{align*}
+%&\beta_{l}=\frac{\sqrt{1+\varepsilon^2\mu_{l}^2}}{\varepsilon^2},\ f^n(w):=\lambda|\psi_{M}|^{2}\psi_{M}(t_{n}+w)=\lambda|\psi_{M}|^{2}\psi_{M}(x,t_{n}+w).
+%\end{align*}
+%
+%Using the Duhamel's principle, we can obtain the general solutions of the above second-order ODEs as
+%\begin{align}\label{fes1}
+%&\hat{\psi}_{\pm,l}^n(s)=e^{\mp i\beta_l s}\hat{\psi}_{\pm,l}(t_n)\pm \frac{i}{2\varepsilon^2\beta_l }\int_0^t e^{\mp i \beta_l (t-s)} \hat{f}_l^n(s),\,f^n(s)=f(\psi_+(t_n+s)+\psi_-(t_n+s))\,ds.
+%\end{align}
+%
+%Similarly, we propose the NPI method in the Fourier frequency domain.\\
+%\noindent{\bf{Step 1.}} Let
+%\begin{equation}\label{f0npi}
+%\hat{\psi}_{\pm,l}^{n,0}(s)=e^{\mp i\beta_l s}\hat{\psi}_{\pm,l}^n.
+%\end{equation}
+%\noindent{\bf{Step 2.}} Calculate $\hat{\psi}_{\pm,l}^{n,k}(s)$ by the following nested Picard iteration:
+%\begin{equation}\label{fes3}
+%\hat{\psi}_{\pm,l}^{n,k}(s)=e^{\mp i\beta_l s}\hat{\psi}_{\pm,l}^n\pm \frac{i}{2\varepsilon^2\beta_l }\int_0^s e^{\mp i \beta_l (s-w)} \hat{f}^{n,k-1}_l(s)+O(s^{k+1}).
+%\end{equation}
+%\noindent{\bf{Step 3.}} Update $\hat{\psi}_{\pm,l}^{n+1}$  by $\hat{\psi}_{\pm,l}^{n+1}=\hat{\psi}_{\pm,l}^{n,m}(\tau)=\hat{\psi}_{\pm,l}^{n,m}(\tau)$.\\
+%
+%Here, the second-order NPI is given below
+%\begin{align*}
+%&\hat{\psi}_l^{n,2}=e^{\mp i\beta_l \tau}\hat{\psi}_{\pm,l}^{n}+\hat{\delta}_{\pm,l}^{n,1}(\tau)+\hat{\delta}_{\pm,l}^{n,2}(\tau),\\
+%\text{where}\\
+%&\hat{\delta}_{\pm,l}^{n,1}=\sum_{\alpha=1}^{4}p_{1,\alpha}^{\mp}(s)\widehat{\mathcal{F}}_{1,\alpha,l}(\psi_+^n,\psi_-^n),\
+%\hat{\delta}_{\pm,l}^{n,2}=\sum_{\alpha=1}^{32}p_{2,\alpha}^{\mp}(s)\widehat{\mathcal{F}}_{2,\alpha,l}(\psi_+^n,\psi_-^n),
+%\end{align*}
+%
+%Due to the difficulty of computing the integrals in \eqref{coefficient}(left), we present the efficient implementation by using the interpolation defined in \eqref{coefficient}(right) rather than the projection.\\
+%Denote $\psi_{j}^{n},$ and $\psi_{j}^{'n}(j=0,\dots,M,\ n=0,1,\dots)$ be the approximations to $\psi(x_{j},t_{n})$ and $\partial_{t}\psi(x_{j},t_{n})$, respectively. Choose $\psi_{j}^{0}=\psi_{0}(x_{j}),\ \psi_{j}^{'0}=\psi_{1}(x_{j})/\varepsilon^2$, then for $n=0,1,\dots,$
+%\begin{align*}
+%&\psi_{\pm,j}^{n,k}=\sum_{l=-M/2}^{M/2-1}{\tilde \psi}_{\pm,l}^{n,k}e^{i\mu_{l}(x_{j}-a)},\
+%\psi_{\pm}^{n,k}(x)=\sum_{l=-M/2}^{M/2-1}{\tilde \psi}_{\pm,l}^{n,k}e^{i\mu_{l}(x-a)},\\
+%&\psi_{\pm,j}^{n+1}=\sum_{l=-M/2}^{M/2-1}{\tilde \psi}_{\pm,l}^{n+1}e^{i\mu_{l}(x_{j}-a)},\
+%\psi_{\pm}^{n+1}(x)=\sum_{l=-M/2}^{M/2-1}{\tilde \psi}_{\pm,l}^{n+1}e^{i\mu_{l}(x-a)},
+%\end{align*}
+%the second order NPI scheme can be written as follow
+%\begin{align*}
+%&\tilde{\psi}_l^{n,2}=e^{\mp i\beta_l \tau}\tilde{\psi}_{\pm,l}^{n}+\tilde{\delta}_{\pm,l}^{n,1}(\tau)+\tilde{\delta}_{\pm,l}^{n,2}(\tau),\\
+%\text{where}\\
+%&\tilde{\delta}_{\pm,l}^{n,1}=\sum_{\alpha=1}^{4}p_{1,\alpha}^{\mp}(s)\widetilde{\mathcal{F}}_{1,\alpha,l}(\psi_+^n,\psi_-^n),\
+%\tilde{\delta}_{\pm,l}^{n,2}=\sum_{\alpha=1}^{32}p_{2,\alpha}^{\mp}(s)\widetilde{\mathcal{F}}_{2,\alpha,l}(\psi_+^n,\psi_-^n),
+%\end{align*}
+
+
+\section{Numerical experiments}
+\label{sec:experiments}
+
+
+
+In this section, we will present numerical tests on the proposed NPI method and report the performance of different numerical methods. In the end, we apply the third NPI method investigate the convergence rate of the problem \eqref{problem}to the coupled nonlinear Schr$\ddot{o}$dinger system in the limit regime. 
+
+In order to do so, we consider the Klein-Gordon equation \eqref{problem} in 1D in terms of the mesh size $h$, time step $\tau$ and the parameter $0< \varepsilon\leq 1$.
+
+\begin{table}[tbhp]
+{\footnotesize
+  \caption{spatial error analysis of the first-order NPI method for the problem \eqref{problem} with \ref{ini:1} at $T=1$ under $\tau=\frac{1}{10^6}$}\label{tab:spatialone}
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|}
+     \hline
+     $\|e^n\|_{L^2}$ &$M=2^3$ &$M=2^4$ &$M=2^5$& $M=2^6$&$M=2^7$&$M=2^8$\\
+     \hline
+     $\varepsilon=1$&     6.88E-2 &  5.83E-2   & 2.54E-5 &  2.27E-9 &  2.26E-9& 2.26E-9\\
+     $\varepsilon=1/2^2$& 3.05E-2 & 3.08E-2  & 4.50E-5  & 2.17E-8  & 2.17E-8  & 2.17E-8\\
+     $\varepsilon=1/2^4$& 4.57E-2 & 3.67E-2  & 5.08E-5  & 8.48E-8  & 8.48E-8 & 8.48E-8\\
+     $\varepsilon=1/2^6$& 4.56E-2& 1.97E-2 & 4.75E-5   & 9.92E-8  & 9.92E-8 & 9.92E-8   \\
+     $\varepsilon=1/2^8$& 4.85E-2& 1.99E-2 & 4.29E-5 & 1.00E-7 & 1.00E-7 & 1.00E-7   \\
+     $\varepsilon=1/2^{10}$& 6.74E-2& 6.65E-2 & 5.96E-5 & 8.22E-8 & 8.22E-8 & 8.22E-8   \\
+     \hline
+\end{tabular}
+\end{center}
+}
+\end{table}
+
+\begin{table}[tbhp]
+{\footnotesize
+  \caption{spatial error analysis of the second-order NPI method for the problem \eqref{problem} with \eqref{ini:1} at $T=1$ under $\tau=\frac{1}{10^5}$}\label{tab:spatialtwo}
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|}
+     \hline
+     $\|e^n\|_{L^2}$ &$M=2^3$ &$M=2^4$ &$M=2^5$& $M=2^6$&$M=2^7$&$M=2^8$\\
+     \hline
+    $\varepsilon=1$&      6.88E-2 &  5.83E-2   & 2.54E-5 &  2.72E-10 &  1.05E-12& 1.05E-12\\
+     $\varepsilon=1/2^2$& 3.05E-2 & 3.08E-2  & 4.50E-5  & 1.43E-10  & 2.14E-11  & 2.14E-11  \\
+     $\varepsilon=1/2^4$& 4.57E-2 & 3.67E-2  & 5.08E-5  & 1.50E-10  & 6.71E-11 & 6.71E-11\\
+     $\varepsilon=1/2^6$& 4.56E-2& 1.97E-2 & 4.74E-5   & 3.02E-10  & 8.29E-11 & 8.29E-11   \\
+     $\varepsilon=1/2^8$& 4.85E-2& 1.99E-2 & 4.29E-5 & 2.31E-10 & 8.35E-11 & 8.35E-11   \\
+     $\varepsilon=1/2^{10}$& 6.74E-2& 6.65E-2 & 5.96E-5 & 2.94E-10 & 1.23E-10 & 1.23E-10   \\
+     \hline
+\end{tabular}
+\end{center}
+}
+\end{table}
+
+\begin{table}[tbhp]
+{\footnotesize
+  \caption{spatial error analysis of the first-order NPI method for the problem \eqref{problem} with \eqref{ini:2} at $T=1$ under $\tau=\frac{1}{10^6}$}\label{tab:spatialthree}
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|}
+     \hline
+     $\|e^n\|_{L^2}$ &$M=2^3$ &$M=2^4$ &$M=2^5$& $M=2^6$&$M=2^7$&$M=2^8$\\
+     \hline
+    $\varepsilon=1$&      2.40E-3 &  1.82E-6   & 1.25E-7 &  1.25E-7 &  1.25E-7& 1.25E-7\\
+     $\varepsilon=1/2^2$& 5.00E-3 & 5.40E-7  & 3.87E-7  & 3.87E-7  & 3.87E-7  & 3.87E-7  \\
+     $\varepsilon=1/2^4$& 3.30E-3 & 5.73E-7  & 3.61E-7  & 3.61E-7  & 3.61E-7 & 3.61E-7\\
+     $\varepsilon=1/2^6$& 5.70E-3& 8.75E-7 & 6.05E-7   & 6.05E-7  & 6.05E-7 & 6.05E-7   \\
+     $\varepsilon=1/2^8$& 5.30E-3& 8.84E-7 & 6.15E-7 & 6.15E-7 & 6.15E-7 & 6.15E-7   \\
+     $\varepsilon=1/2^{10}$& 6.50E-3& 5.93E-7 & 4.47E-7 & 4.47E-7 & 4.47E-7 & 4.47E-7   \\
+     \hline
+\end{tabular}
+\end{center}
+}
+\end{table}
+
+\begin{table}[tbhp]
+{\footnotesize
+  \caption{spatial error analysis of the second-order NPI method for the problem \eqref{problem} with \eqref{ini:2} at $T=1$ under $\tau=\frac{1}{10^5}$}\label{tab:spatialfour}
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|}
+     \hline
+     $\|e^n\|_{L^2}$ &$M=2^3$ &$M=2^4$ &$M=2^5$& $M=2^6$&$M=2^7$&$M=2^8$\\
+     \hline
+    $\varepsilon=1$&      2.40E-3 &  1.82E-6   & 1.20E-11 &  1.20E-11 &  1.19E-11& 1.20E-11\\
+     $\varepsilon=1/2^2$& 5.00E-3 & 3.82E-7  & 3.10E-11  & 3.10E-11  & 3.10E-11  & 3.10E-11  \\
+     $\varepsilon=1/2^4$& 3.30E-3 & 4.44E-7  & 5.57E-11  & 5.57E-11  & 5.57E-11 & 5.56E-11\\
+     $\varepsilon=1/2^6$& 5.70E-3& 6.36E-7 & 3.36E-11   & 3.36E-11  & 3.36E-11 & 3.36E-11   \\
+     $\varepsilon=1/2^8$& 5.30E-3& 6.39E-7 & 3.32E-11   & 3.32E-11  & 3.31E-11 & 3.31E-11   \\
+     $\varepsilon=1/2^{10}$& 6.50E-3& 3.88E-7 & 8.26E-11   & 8.26E-11  & 8.26E-11 & 8.26E-11   \\
+     \hline
+\end{tabular}
+\end{center}
+}
+\end{table}
+
+
+\subsection{Spatial/temporal resolution} To test the accuracy, we set the initial conditions as follow
+\begin{eqnarray}
+&u_0(x)=\frac{1}{2}\frac{\cos(3x)^2\sin(2x)}{2-\cos(x)}, \quad u_1(x)=\frac{1}{2}\frac{\sin(x)\cos(2x)}{2-\cos(x)},\label{ini:1}\\
+&u_0(x)=\frac{2+i}{\sqrt{5}}\cos(2x), \quad u_1(x)=\frac{1+i}{\sqrt{2}}(\sin(2x)+\frac{1}{2}\cos(2x)).\label{ini:2}
+\end{eqnarray}
+
+
+\begin{figure}[tbhp]%\label{fig:conver1}
+  \centering
+  \subfloat[]{\label{fig:a}\includegraphics[width=2.5in]{fig11.eps}}
+  \subfloat[]{\label{fig:b}\includegraphics[width=2.5in]{fig12.eps}}
+
+  \centering
+  \subfloat[]{\label{fig:c}\includegraphics[width=2.5in]{fig13.eps}}
+  \caption{The convergence rate in time of first-order(a), second-order(b) and third-order(c) NPI methods  with $M=2^6$.}
+\label{fig:testfig1}
+\end{figure}
+
+\begin{figure}[tbhp]%\label{fig:conver2}
+  \centering
+  \subfloat[]{\label{fig:d}\includegraphics[width=2.5in]{fig21.eps}}
+  \subfloat[]{\label{fig:e}\includegraphics[width=2.5in]{fig22.eps}}
+
+  \centering
+  \subfloat[]{\label{fig:f}\includegraphics[width=2.5in]{fig23.eps}}
+  \caption{The convergence rate in time of first-order(a), second-order(b) and third-order(c) NPI methods  with $M=2^6$.}
+\label{fig:testfig2}
+\end{figure}
+
+
+The problem \eqref{problem} is solved numerically on an interval $\Omega=[-\pi,\pi]$ with periodic boundary conditions on $\partial\Omega$. The 'exact' solution $\psi_{exact}$ of the problem \eqref{problem} is obtained numerically by the third-order NPI method
+with a very small step size, i.e.$\tau=10^{-4},\ h=2\pi/2^8$.
+
+Denote $\psi_{h,\tau}^{n}$ as the numerical solution obtained by a numerical method with mesh size $h$ and time step $\tau$. In order to quantify the convergence, we introduce
+\begin{align*}
+&error:=e_{h,\tau}(t_n)=\sqrt{h\sum_{j=0}^{M-1}|(\psi_{h,\tau})_{j}^{n}-(\psi_{exact})_{j}^{n}|^2},\\
+&order:=e_{h,\tau}(t_n)/e_{h,\tau/2}(t_n).
+\end{align*}
+Table \ref{tab:spatialone}, \ref{tab:spatialtwo},\ref{tab:spatialthree}, \ref{tab:spatialfour} list the spatial errors at $T=1$ of the first-order and second-order NPI method for the problem \eqref{problem} with \ref{ini:1}, respectively. The spatial errors at $T=1$ of the first-order and second-order NPI method for the problem \eqref{problem} with \ref{ini:2} are given in Table \ref{tab:spatialthree}, \ref{tab:spatialfour}. For temporal error analysis, the mesh size $h$ is fixed to $h=2\pi/2^6$ such that the discretization error in space is negligible. Figure \ref{fig:testfig1},\ref{fig:testfig2} are log-log plot of temporal error for $\tau=1/20,1/40,1/80,...,1/1280$ and $\varepsilon=1,1/2^2,1/2^4,1/2^6,1/2^8,1/2^10$. From Table \ref{tab:spatialone}-\ref{tab:spatialfour} and Figure \ref{fig:testfig1}-\ref{fig:testfig2}, we can make the following observations:\\
+(1)the proposed NPI methods (first-order, second-order NPI methods) are spectrally accurate, the errors are independent of $\varepsilon$.\\
+(2)For the discretization error in time, in the nonrelativistic limit regime, i.e. $0<\varepsilon\leq 1$, our numerical results from Figure 1 suggest that the proposed NPI methods have first-order, second-order and third-order uniformly convergence rate, respectively.
+
+
+\subsection{comparison of different methods}
+In this subsection, we take $\lambda=1$ and the initial conditions as follow
+\begin{eqnarray}\label{ini:3}
+&u_0(x)=3\sin(x)/(\exp(x^2/2)+\exp(-x^2/2) ),\ x\in[-32,32],t\in[0,1], \\
+&u_1(x)=2\exp(-x^2)/\sqrt(\pi).
+\end{eqnarray}
+Table  shows the comparison of four numerical methods(including EWI-FP\cite{finiteE:2012},TS-FP\cite{Timesplitting:2014},IEI-FP\cite{Asymptoticiterative:2018} and NPI method) under $\varepsilon=1$ together with the computational time. Under $\varepsilon=10^{-4}$ we have similar data given in Table . For ease of comparison, we a log-log plot is made in Figure \ref{fig:comparison}. All methods are programmed with Matlab and run on an Intel i3-3120M 2.5GHz CPU laptop.
+
+\begin{figure}[tbhp]%\label{fig:conver2}
+  \centering
+  \subfloat[]{\includegraphics[width=2.5in]{figc1.eps}}
+  \subfloat[]{\includegraphics[width=2.5in]{figc2.eps}}
+
+  \centering
+  \subfloat[]{\includegraphics[width=2.5in]{figc4.eps}}
+  \subfloat[]{\includegraphics[width=2.5in]{figc5.eps}}
+  \caption{ .}
+\label{fig:comparison}
+\end{figure}
+
+
+
+
+
+\subsection{convergence rate of the problem $\eqref{problem}$ to its limit model} Here, we apply the third-order NPI method to study numerically the convergence rate from the problem \eqref{problem} to its limiting system \cite{Asymptoticiterative:2018} as $\varepsilon\rightarrow 0$, i.e., $\psi(x,t)\rightarrow z(x,t)=\frac{1}{2}(\exp^{it/\varepsilon^2}u_{\infty}(t,x)+ \exp^{-it/\varepsilon^2}\overline{v}_{infty}(t,x))$, where $({u}_{infty},{v}_{infty})$ satisfies the coupled cubic Schr\"{o}dinger system
+\begin{eqnarray}\label{limit}
+&i\partial_tu_{\infty}=\frac{1}{2}\Delta u_{\infty}+\frac{\lambda}{8}(|u_{\infty}|^2+2|v_{\infty}|^2)u_{\infty},\ x\in \mathbb{R}^d,t>0,\\
+&i\partial_tv_{\infty}=\frac{1}{2}\Delta v_{\infty}+\frac{\lambda}{8}(|v_{\infty}|^2+2|u_{\infty}|^2)v_{\infty},\ x\in \mathbb{R}^d,t>0,\\
+&u_{\infty}=\psi_0-i\psi_1,\ v_{\infty}=\overline{\psi}_0-i\overline{\psi}_1.
+\end{eqnarray}
+We take $d=1,\lambda=1$ in the problem \eqref{problem} and choose the initial conditions as follow
+\begin{eqnarray}\label{ini:4}
+&u_0(x)=\exp(-x^2)/\sqrt(\pi), \quad u_1(x)=\frac{1}{2}sech(x^2)\sin(x).
+\end{eqnarray}
+The problem \eqref{problem} is solved numerically on an interval $\Omega=[-128,128]$ with periodic boundary conditions on $\partial\Omega$.
+Figure \ref{fig:limit} shows the error between $z(x,t)$ and $\psi_{NPI}$, where $\psi_{NPI}$ is obtained by the third-order NPI methods with $\tau=10^{-4},h=1/16$ and $z(x,t)$ is obtained by the method \cite{} with $\tau=10^{-5},h=1/16$. As shown in Figure \ref{fig:limit}, the solution of third-order NPI method converges to that of the limit system \eqref{limit} quadratically in $\varepsilon$ (not uniformly in time, i.e.
+\begin{equation*}
+\eta(t):=\|\psi_{NPI}(\cdot,t)-z(\cdot,t)\|_{L^2}\leq (C_1+C_2T)\varepsilon^2,\ 0\leq t\leq T,
+\end{equation*}
+where $C_1$ and $C_2$ are two positive constants which are independent of $\varepsilon$ and $T$.
+
+\begin{figure}[tbhp]
+  \centering
+  \includegraphics[width=5in]{limit.eps}
+  \caption{Time evolution of $\eta(t)$ for the \eqref{ini:4} under different $\varepsilon$.}
+\label{fig:limit}
+\end{figure}
+
+
+
+
+
+\section{Conclusions}
+\label{sec:conclusions}
+In this paper, we consider uniformly accurate nested picard iterative methods for the periodic initial value problem of nonlinear Klein-Gordon equation in 1D in the nonrelativistic limit regime. Thereafter, the sharp $H^1$ error analysis of the arbitrary higher-order NPI method is derived. From the error analysis and numerical results, the NPI methods perform the uniformly convergence rate in time under $0<\varepsilon\leq 1$. Furthermore, the NPI method can also be used to solve the similar problems, such as The Klein-Gordon-Zakharov equation in the high plasma frequency limit regime. In addition, how to compute NPI methods efficiently and fastly will be considered in our future work.
+
+\appendix
+\section{Details of the third-order NPI method}
+%\lipsum[71]
+Here, we shall give the details of programming by using Matlab R2012a. At first, let
+$\psi_{\pm}^{n+1}=\psi_{\pm}^{n,3}:=e^{\mp i\mathcal{D}_\varepsilon \tau}\psi_\pm^{n}+\delta_{\pm}^{n,1}(\tau)+\delta_{\pm}^{n,2}(\tau)+\delta_{\pm}^{n,3}(\tau)$, can be stated as below by specifying $\delta_{\pm}^{n,3}$ i.e. evaluating \eqref{eq:deltnk} for $k=3$,
+%&p_{-2,2}(\pm s)\frac{1}{2}\mathcal{B}^2\mathcal{F}_{1,\pm}^n+ p_{0,2}(\pm s)\frac{1}{2}\mathcal{B}^2\mathcal{F}_{2,\pm}^n+ p_{2,2}(\pm s)\frac{1}{2}\mathcal{B}^2\mathcal{F}_{2,\mp}^n+ p_{4,2}(\pm s)\frac{1}{2}\mathcal{B}^2\mathcal{F}_{1,\mp}^n\\
+%&-sp_{-2,1}(\pm s)\mathcal{B}^2\mathcal{F}_{1,\pm}^n- sp_{0,1}(\pm s)\mathcal{B}^2\mathcal{F}_{2,\pm}^n- sp_{2,1}(\pm s)\mathcal{B}^2\mathcal{F}_{2,\mp}^n- sp_{4,1}(\pm s)\mathcal{B}^2\mathcal{F}_{1,\mp}^n\\
+\begin{align*}
+\delta_{\pm}^{n,3}(s)=
+&s^2p_{-2}(\pm s)\frac{1}{2}\mathcal{B}^2\mathcal{F}_{1,\pm}^n+ s^2p_0(\pm s)\frac{1}{2}\mathcal{B}^2\mathcal{F}_{2,\pm}^n+ s^2p_{2}(\pm s)\frac{1}{2}\mathcal{B}^2\mathcal{F}_{2,\mp}^n+ s^2p_{4}(\pm s)\frac{1}{2}\mathcal{B}^2\mathcal{F}_{1,\mp}^n\\
+&-s\sum_{k=1}^6\sum\limits_{\sigma=\pm}q_{k,\sigma}(\pm s)\mathcal{B}\mathcal{F}_{2,k,\pm\sigma}^n
+\pm\sum_{k=1}^6\sum\limits_{\sigma=\pm}q_{k,1,\sigma}(\pm s)\mathcal{B}\mathcal{F}_{2,k,\pm\sigma}^n\\
+&+p_{-2,2}(\pm s)\mathcal{B}\mathcal{G}_{1,1,\pm}^n+ p_{0,2}(\pm s)\mathcal{B}\mathcal{G}_{2,1,\pm}^n+ p_{2,2}(\pm s)\mathcal{B}\mathcal{G}_{2,1,\mp}^n+ p_{4,2}(\pm s)\mathcal{B}\mathcal{G}_{1,1,\mp}^n\\
+&\mp sp_{-2,1}(\pm s)\mathcal{B}\mathcal{G}_{1,2,\pm}^n\mp s p_{0,1}(\pm s)\mathcal{B}\mathcal{G}_{2,2,\pm}^n\mp s p_{2,1}(\pm s)\mathcal{B}\mathcal{G}_{2,2,\mp}^n\mp sp_{4,1}(\pm s)\mathcal{B}\mathcal{G}_{1,2,\mp}^n\\
+&\pm\sum_{k=1}^6\sum\limits_{\sigma=\pm}q_{k,1,\sigma}(\pm s)\mathcal{F}_{3,k,\pm\sigma}^n\quad
++p_{-2,2}(\pm s)\mathcal{E}_{1,\pm}^n+ p_{0,2}(\pm s)\mathcal{E}_{2,\pm}^n+ p_{2,2}(\pm s)\mathcal{E}_{2,\mp}^n+ p_{4,2}(\pm s)\mathcal{E}_{1,\mp}^n\\
+&+\sum_{k=1}^8\sum\limits_{\sigma_1=\pm}\sum\limits_{\sigma_2=\pm}r_{k,\sigma_1,\sigma_2}(\pm s)\mathcal{H}_{k,\sigma_1,\sigma_2}\nonumber\\
+&\pm\sum_{k=1}^6\sum\limits_{\sigma=\pm}q_{k,2,\sigma}(\pm s)\mathcal{F}_{4,k,\pm\sigma}^n,\nonumber\\
+\end{align*}
+We note that $\overline{p_k(s)}=-p_k(-s)$ ($k=0,\pm2,4$).
+\begin{align}
+&\mathcal{G}_{1,1,\pm}^n:=\mathcal{G}_{1,1,\pm}(\psi_+^n,\psi_-^n)=\mathcal{A}\left[\frac{1}{2}\mathcal{B}((\psi_\pm^n)^2\overline{\psi_\mp^n})\pm \left((\psi_\pm^n)^2\overline{\mathcal{B}\psi_\mp^n}-2(\mathcal{B}\psi_\pm^n)\psi_\pm^n\overline{\psi_\mp^n}\right)\right],\nonumber\\
+&\mathcal{G}_{2,1,\pm}^n:=\mathcal{G}_{2,1,\pm}(\psi_+^n,\psi_-^n)=\mathcal{A}\bigg[
+\frac{1}{2}\mathcal{B}(2|\psi_\mp^n|^2+|\psi_\pm^n|^2)\psi_\pm^n \pm\big(2\psi_\pm^n\overline{\psi_\mp^n}(\mathcal{B}\psi_\mp^n)-2(|\psi_\pm^n|^2+|\psi_{\mp}^n|^2)(\mathcal{B}\psi_\pm^n)\nonumber\\
+&\hskip2cm\qquad\qquad\qquad-(\psi_\pm^n)^2\overline{\mathcal{B}\psi_\pm^n}+2\psi_\pm^n\psi_\mp^n\overline{(\mathcal{B}\psi_\mp^n)}\big)
+\bigg],
+\nonumber\\
+&\mathcal{G}_{1,2,\pm}^n:=\mathcal{G}_{1,2,\pm}(\psi_+^n,\psi_-^n)=\mathcal{A}\left[\pm\mathcal{B}((\psi_\pm^n)^2\overline{\psi_\mp^n})\pm \left((\psi_\pm^n)^2\overline{\mathcal{B}\psi_\mp^n}-2(\mathcal{B}\psi_\pm^n)\psi_\pm^n\overline{\psi_\mp^n}\right)\right],\nonumber\\
+&\mathcal{G}_{2,2,\pm}^n:=\mathcal{G}_{2,2,\pm}(\psi_+^n,\psi_-^n)=\mathcal{A}\bigg[
+\pm\mathcal{B}(2|\psi_\mp^n|^2+|\psi_\pm^n|^2)\psi_\pm^n \pm\big(2\psi_\pm^n\overline{\psi_\mp^n}(\mathcal{B}\psi_\mp^n)-2(|\psi_\pm^n|^2+|\psi_{\mp}^n|^2)(\mathcal{B}\psi_\pm^n)\nonumber\\
+&\hskip2cm\qquad\qquad\qquad-(\psi_\pm^n)^2\overline{\mathcal{B}\psi_\pm^n}+2\psi_\pm^n\psi_\mp^n\overline{(\mathcal{B}\psi_\mp^n)}\big)
+\bigg],
+\nonumber\\
+&\mathcal{F}_{3,m,\pm}^n:=\mathcal{F}_{3,m,\pm}(\psi_+^n,\psi_-^n)=
+\mathcal{A}\left(2(-\psi_+^n+\overline{\mathcal{B}\psi_+^n}-|\psi_+^n|^2+ \psi_-^n\overline{\mathcal{B}\psi_-^n}+|\psi_-^n|^2)\mathcal{F}_{m,\mp}^n+ 2(\psi_+^n\mathcal{B}\psi_-^n- \psi_-^n\mathcal{B}\psi_+^n)\overline{\mathcal{F}_{m,\pm}^n}\right),\quad m=1,2;\nonumber\\
+&\mathcal{F}_{3,m+2,\pm}^n:=\mathcal{F}_{3,m+2,\pm}(\psi_+^n,\psi_-^n)=
+\mathcal{A}\left(2(\mp\psi_{\mp}\overline{B\psi_{\pm}} \pm\overline{\psi_{\pm}^n}\psi_{\mp}^n)\mathcal{F}_{m,\mp}^n
++2(\psi_{\mp}^n\mathcal{B}\psi_{\mp}^n)\overline{\mathcal{F}_{m,\pm}^n}\right),\quad m=1,2;\nonumber\\
+&\mathcal{F}_{3,m+4,\pm}^n:=\mathcal{F}_{3,m+4,\pm}(\psi_+^n,\psi_-^n)=
+\mathcal{A}\left(2(\pm\psi_{\pm}\overline{B\psi_{\mp}} \mp\overline{\psi_{\mp}^n}\psi_{\pm}^n)\mathcal{F}_{m,\mp}^n
++2(\psi_{\pm}^n\mathcal{B}\psi_{\pm}^n)\overline{\mathcal{F}_{m,\pm}^n}\right),\quad m=1,2,\nonumber\\
+&\mathcal{E}_{1,\pm}^n:=\mathcal{E}_{1,\pm}(\psi_+^n,\psi_-^n)=\mathcal{A}(-2\psi_{\pm}^n\mathcal{B}\psi_{\pm}^n\overline{\mathcal{B}\psi_{\mp}^n} + \overline{\psi_{\mp}}\mathcal{B}(\psi_{\pm}^n)^2),
+\quad\mathcal{E}_{2,\pm}^n:=\mathcal{E}_{2,\pm}(\psi_+^n,\psi_-^n)=\mathcal{A}\left( 2\psi_{\pm}^n|\mathcal{B}\psi_{\mp}^n|^2+2\psi_{\pm}^n|\mathcal{B}\psi_{\pm}^n|^2- 2\psi_{\mp}^n\mathcal{B}\psi_{\pm}^n\mathcal{B}\psi_{\mp}^n -2\overline{\psi_{\mp}^n}\mathcal{B}\psi_{\pm}^n\mathcal{B}\psi_{\mp}^n +\overline{\psi_{\pm}^n}(\mathcal{B}\psi_{\pm}^n)^2 \right),\nonumber\\
+&\mathcal{H}_{1,\sigma_1,\sigma_2}:=\mathcal{H}_{1,\sigma_1,\sigma_2}(\psi_+^n,\psi_-^n)=
+-2\mathcal{A}\psi_+^nF_{1,\sigma_1}\overline{F_{1,-\sigma_2}}+ \mathcal{A}\overline{\psi_-^n}F_{1,\sigma_1}F_{1,\sigma_2},\nonumber\\
+&\mathcal{H}_{2,\sigma_1,\sigma_2}:=\mathcal{H}_{2,\sigma_1,\sigma_2}(\psi_+^n,\psi_-^n)=
+-2\mathcal{A}\psi_+^nF_{1,\sigma_1}\overline{F_{2,-\sigma_2}}+ \mathcal{A}\overline{\psi_-^n}F_{1,\sigma_1}F_{1,\sigma_2},\nonumber\\
+&\mathcal{H}_{3,\sigma_1,\sigma_2}:=\mathcal{H}_{3,\sigma_1,\sigma_2}(\psi_+^n,\psi_-^n)=
+-2\mathcal{A}\psi_+^nF_{2,\sigma_1}\overline{F_{1,-\sigma_2}}+ \mathcal{A}\overline{\psi_-^n}F_{1,\sigma_1}F_{1,\sigma_2},\nonumber\\
+&\mathcal{H}_{4,\sigma_1,\sigma_2}:=\mathcal{H}_{4,\sigma_1,\sigma_2}(\psi_+^n,\psi_-^n)=
+-2\mathcal{A}\psi_+^nF_{2,\sigma_1}\overline{F_{2,-\sigma_2}}+ \mathcal{A}\overline{\psi_-^n}F_{1,\sigma_1}F_{1,\sigma_2},\nonumber\\
+&\mathcal{H}_{5,\sigma_1,\sigma_2}:=\mathcal{H}_{5,\sigma_1,\sigma_2}(\psi_+^n,\psi_-^n)=
+-2\mathcal{A}\psi_-^nF_{1,\sigma_1}\overline{F_{1,-\sigma_2}}+ \mathcal{A}\overline{\psi_+^n}F_{1,\sigma_1}F_{1,\sigma_2},\nonumber\\
+&\mathcal{H}_{6,\sigma_1,\sigma_2}:=\mathcal{H}_{6,\sigma_1,\sigma_2}(\psi_+^n,\psi_-^n)=
+-2\mathcal{A}\psi_-^nF_{1,\sigma_1}\overline{F_{2,-\sigma_2}}+ \mathcal{A}\overline{\psi_+^n}F_{1,\sigma_1}F_{1,\sigma_2},\nonumber\\
+&\mathcal{H}_{7,\sigma_1,\sigma_2}:=\mathcal{H}_{7,\sigma_1,\sigma_2}(\psi_+^n,\psi_-^n)=
+-2\mathcal{A}\psi_-^nF_{2,\sigma_1}\overline{F_{1,-\sigma_2}}+ \mathcal{A}\overline{\psi_+^n}F_{1,\sigma_1}F_{1,\sigma_2},\nonumber\\
+&\mathcal{H}_{8,\sigma_1,\sigma_2}:=\mathcal{H}_{8,\sigma_1,\sigma_2}(\psi_+^n,\psi_-^n)=
+-2\mathcal{A}\psi_-^nF_{2,\sigma_1}\overline{F_{2,-\sigma_2}}+ \mathcal{A}\overline{\psi_+^n}F_{1,\sigma_1}F_{1,\sigma_2},\nonumber\\
+&\mathcal{F}_{4,m,\pm}^n:=\mathcal{F}_{4,m,\pm}(\psi_+^n,\psi_-^n)=
+\mathcal{A}\left(2(|\psi_+^n|^2+|\psi_-^n|^2)\mathcal{G}_{m,\mp}^n+ 2\psi_+^n\psi_-^n\overline{\mathcal{G}_{m,\pm}^n}\right),\quad m=1,2;\nonumber\\
+&\mathcal{F}_{4,m+2,\pm}^n:=\mathcal{F}_{4,m+2,\pm}(\psi_+^n,\psi_-^n)=
+\mathcal{A}\left(2\psi_{\mp}^n\overline{\psi_{\pm}^n}\mathcal{G}_{m,\mp}^n+(\psi_\mp^n)^2\overline{\mathcal{G}_{m,\pm}^n}\right),\quad m=1,2;\nonumber\\
+&\mathcal{F}_{4,m+4,\pm}^n:=\mathcal{F}_{4,m+4,\pm}(\psi_+^n,\psi_-^n)=
+\mathcal{A}\left(2\psi_{\pm}^n\overline{\psi_{\mp}^n}\mathcal{G}_{m,\mp}^n+(\psi_\mp^n)^2\overline{\mathcal{G}_{m,\pm}^n}\right),\quad m=1,2.\nonumber
+\end{align}
+\begin{align}
+p_{0,2}(s)=&e^{\frac{-is}{\varepsilon^2}}\frac{s^3}{3},\quad
+p_{\pm2,2}(s)=e^{\frac{-is}{\varepsilon^2}}\int_{0}^{s}w^2e^{\frac{\pm2iw}{\varepsilon^2}}dw,\quad p_{4,2}(s)=e^{\frac{-is}{\varepsilon^2}}\int_{0}^{s}w^2e^{\frac{4 iw}{\varepsilon^2}}dw,\nonumber\\
+q_{1,1,\pm}(s)=&\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}} w(p_{-2}(\mp w)+p_4(\pm w))\,dw,\quad
+q_{2,1,\pm}(s)=\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+w(p_2(\pm w)+p_0(\mp w))\,dw,\nonumber\\
+q_{3,1,\pm}(s)=&\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\pm 2iw}{\varepsilon^2}} w(p_{-2}(\mp w)+p_4(\pm w))\,dw,\quad
+q_{4,1,\pm}(s)=\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\pm 2iw}{\varepsilon^2}} w(p_2(\pm w)+p_0(\mp w))\,dw,\nonumber\\
+q_{5,1,\pm}(s)=&\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\mp 2iw}{\varepsilon^2}} w(p_{-2}(\mp w)+p_4(\pm w))\,dw,\quad
+q_{6,1,\pm}(s)=\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\mp 2iw}{\varepsilon^2}} w(p_2(\pm w)+p_0(\mp w))\,dw,\nonumber\\
+r_{1,\sigma_1,\sigma_2}(s)=&e^{\frac{-is}{\varepsilon^2}}\int_0^s (p_{-2}(\sigma_1 w)+p_4(-\sigma_1 w))(p_{-2}(\sigma_2 w)+p_4(-\sigma_2 w))\,dw,\nonumber\\
+r_{2,\sigma_1,\sigma_2}(s)=&e^{\frac{-is}{\varepsilon^2}}\int_0^s (p_{-2}(\sigma_1 w)+p_4(-\sigma_1 w))(p_0(\sigma_2 w)+p_2(-\sigma_2 w))\,dw,\quad\nonumber\\
+r_{3,\sigma_1,\sigma_2}(s)=&e^{\frac{-is}{\varepsilon^2}}\int_0^s (p_0(\sigma_1 w)+p_2(-\sigma_1 w))(p_{-2}(\sigma_2 w)+p_4(-\sigma_2 w))\,dw,\nonumber\\
+r_{4,\sigma_1,\sigma_2}(s)=&e^{\frac{-is}{\varepsilon^2}}\int_0^s (p_0(\sigma_1 w)+p_2(-\sigma_1 w))(p_0(\sigma_2 w)+p_2(-\sigma_2 w))\,dw,\nonumber\\
+r_{5,\sigma_1,\sigma_2}(s)=&e^{\frac{-is}{\varepsilon^2}}\int_0^s e^{\frac{2iw}{\varepsilon^2}}(p_{-2}(\sigma_1 w)+p_4(-\sigma_1 w))(p_{-2}(\sigma_2 w)+p_4(-\sigma_2 w))\,dw,\nonumber\\
+r_{6,\sigma_1,\sigma_2}(s)=&e^{\frac{-is}{\varepsilon^2}}\int_0^se^{\frac{2iw}{\varepsilon^2}} (p_{-2}(\sigma_1 w)+p_4(-\sigma_1 w))(p_0(\sigma_2 w)+p_2(-\sigma_2 w))\,dw,\nonumber\\
+r_{7,\sigma_1,\sigma_2}(s)=&e^{\frac{-is}{\varepsilon^2}}\int_0^s e^{\frac{2iw}{\varepsilon^2}}(p_0(\sigma_1 w)+p_2(-\sigma_1 w))(p_{-2}(\sigma_2 w)+p_4(-\sigma_2 w))\,dw,\nonumber\\
+r_{8,\sigma_1,\sigma_2}(s)=&e^{\frac{-is}{\varepsilon^2}}\int_0^se^{\frac{2iw}{\varepsilon^2}} (p_0(\sigma_1 w)+p_2(-\sigma_1 w))(p_0(\sigma_2 w)+p_2(-\sigma_2 w))\,dw,\nonumber\\
+q_{1,2,\pm}(s)=&\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}} (p_{-2,1}(\mp w)+p_{4,1}(\pm w))\,dw,\quad
+q_{2,2,\pm}(s)=\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+(p_{2,1}(\pm w)+p_{0,1}(\mp w))\,dw,\nonumber\\
+q_{3,2,\pm}(s)=&\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\pm 2iw}{\varepsilon^2}} (p_{-2,1}(\mp w)+p_{4,1}(\pm w))\,dw,\quad
+q_{4,2,\pm}(s)=\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\pm 2iw}{\varepsilon^2}} (p_{2,1}(\pm w)+p_{0,1}(\mp w))\,dw,\nonumber\\
+q_{5,2,\pm}(s)=&\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\mp 2iw}{\varepsilon^2}} (p_{-2,1}(\mp w)+p_{4,1}(\pm w))\,dw,\quad
+q_{6,2,\pm}(s)=\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\mp 2iw}{\varepsilon^2}} (p_{2,1}(\pm w)+p_{0,1}(\mp w))\,dw,\nonumber\\
+\end{align}
+
+
+
+
+
+
+where the operator $\mathcal{A}=i\frac{\lambda}{2\varepsilon^2}\mathcal{D}_{\varepsilon}^{-1},\mathcal{B}=\frac{i}{\tau}\sin(\tau\mathcal{D})$, and we use the notation $-\sigma_1=+$ ($\sigma_1=-$) $,-\sigma_1=-$ ($\sigma_1=+$). The coefficients are given below
+
+\begin{align}
+&\delta_{\pm}^{n,2}(s)=p_{-2,1}(\pm s)\mathcal{G}_{1,\pm}^n+ p_{0,1}(\pm s)\mathcal{G}_{2,\pm}^n+ p_{2,1}(\pm s)\mathcal{G}_{2,\mp}^n+ p_{4,1}(\pm s)\mathcal{G}_{1,\mp}^n \pm\sum_{k=1}^6\sum\limits_{\sigma=\pm}q_{k,\sigma}(\pm s)\mathcal{F}_{2,k,\pm\sigma}^n,\nonumber\\
+&\qquad\qquad\mp sp_{-2}(\pm s)\mathcal{B}\mathcal{F}_{1,\pm}^n\mp s p_0(\pm s)\mathcal{B}\mathcal{F}_{2,\pm}^n\mp sp_{2}(\pm s)\mathcal{B}\mathcal{F}_{2,\mp}^n\mp s p_{4}(\pm s)\mathcal{B}\mathcal{F}_{1,\mp}^n,\nonumber\\
+&\mathcal{G}_{1,\pm}^n:=\mathcal{G}_{1,\pm}(\psi_+^n,\psi_-^n)=\mathcal{A}\left[\mathcal{B}((\psi_\pm^n)^2\overline{\psi_\mp^n})\pm \left((\psi_\pm^n)^2\overline{\mathcal{B}\psi_\mp^n}-2(\mathcal{B}\psi_\pm^n)\psi_\pm^n\overline{\psi_\mp^n}\right)\right],\nonumber\\
+&\mathcal{G}_{2,\pm}^n:=\mathcal{G}_{2,\pm}(\psi_+^n,\psi_-^n)=\mathcal{A}\bigg[
+\mathcal{B}(2|\psi_\mp^n|^2+|\psi_\pm^n|^2)\psi_\pm^n \pm\big(2\psi_\pm^n\overline{\psi_\mp^n}(\mathcal{B}\psi_\mp^n)-2(|\psi_\pm^n|^2+|\psi_{\mp}^n|^2)(\mathcal{B}\psi_\pm^n)\nonumber\\
+&\hskip2cm\qquad\qquad\qquad-(\psi_\pm^n)^2\overline{\mathcal{B}\psi_\pm^n}+2\psi_\pm^n\psi_\mp^n\overline{(\mathcal{B}\psi_\mp^n)}\big)
+\bigg],
+\nonumber\\
+&\mathcal{F}_{2,m,\pm}^n:=\mathcal{F}_{2,m,\pm}(\psi_+^n,\psi_-^n)=
+\mathcal{A}\left(2(|\psi_+^n|^2+|\psi_-^n|^2)\mathcal{F}_{m,\mp}^n+ 2\psi_+^n\psi_-^n\overline{\mathcal{F}_{m,\pm}^n}\right),\quad m=1,2;\nonumber\\
+&\mathcal{F}_{2,m+2,\pm}^n:=\mathcal{F}_{2,m+2,\pm}(\psi_+^n,\psi_-^n)=
+\mathcal{A}\left(2\psi_{\mp}^n\overline{\psi_{\pm}^n}\mathcal{F}_{m,\mp}^n+(\psi_\mp^n)^2\overline{\mathcal{F}_{m,\pm}^n}\right),\quad m=1,2;\nonumber\\
+&\mathcal{F}_{2,m+4,\pm}^n:=\mathcal{F}_{2,m+4,\pm}(\psi_+^n,\psi_-^n)=
+\mathcal{A}\left(2\psi_{\pm}^n\overline{\psi_{\mp}^n}\mathcal{F}_{m,\mp}^n+(\psi_\mp^n)^2\overline{\mathcal{F}_{m,\pm}^n}\right),\quad m=1,2.\nonumber
+ \end{align}
+ where the operator $ \mathcal{B}=\frac{i}{\tau}\sin(\tau\mathcal{D})$, and we use the notation $\pm\sigma=+$ ($\sigma=+,-$) for the cases of $++$ and $--$, and $\pm\sigma=-$ for the cases of $+-$ and $-+$. The coefficients are given below
+\begin{align}
+p_{0,1}(s)=&e^{\frac{-is}{\varepsilon^2}}\frac{s^2}{2},\quad
+ p_{\pm2,1}(s)=e^{\frac{-is}{\varepsilon^2}}\int_{0}^{s}we^{\frac{\pm2iw}{\varepsilon^2}}dw,\quad p_{4,1}(s)=e^{\frac{-is}{\varepsilon^2}}\int_{0}^{s}we^{\frac{4iw}{\varepsilon^2}}dw,\nonumber\\
+ q_{1,\pm}(s)=&\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}} (p_2(\pm w)+p_4(\pm w))\,dw,\quad
+q_{2,\pm}(s)=\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+(p_2(\pm w)+p_0(\mp w))\,dw,\nonumber\\
+q_{3,\pm}(s)=&\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\pm 2iw}{\varepsilon^2}} (p_2(\pm w)+p_4(\pm w))\,dw,\quad
+q_{4,\pm}(s)=\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\pm 2iw}{\varepsilon^2}} (p_2(\pm w)+p_0(\mp w))\,dw,\nonumber\\
+q_{5,\pm}(s)=&\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\mp 2iw}{\varepsilon^2}} (p_2(\pm w)+p_4(\pm w))\,dw,\quad
+q_{6,\pm}(s)=\int_0^se^{\frac{- i(s-w)}{\varepsilon^2}}
+e^{\frac{\mp 2iw}{\varepsilon^2}} (p_2(\pm w)+p_0(\mp w))\,dw.\nonumber
+\end{align}
+
+
+
+
+
+
+\bibliographystyle{siamplain}
+\bibliography{references}
+\end{document}
